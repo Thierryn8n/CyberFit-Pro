@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run build:edge",
+    "build": "next build",
     "build:edge": "cd supabase/functions && deno task build send-instructor-token",
     "start": "next start",
     "lint": "next lint",

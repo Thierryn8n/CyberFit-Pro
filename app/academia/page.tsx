@@ -48,7 +48,7 @@ export default function AcademiaDashboard() {
             },
             {
               title: 'Instrutores',
-              value: stats.instrutores || 0,
+              value: instrutores.length || 0,
               icon: ChalkboardTeacher,
               color: 'from-green-500/20 to-emerald-500/20'
             },
@@ -142,4 +142,4 @@ export default function AcademiaDashboard() {
       </main>
     </div>
   );
-} 
+}

@@ -341,7 +341,7 @@ export default function InstructorInviteForm({ isOpen, onClose }: InstructorInvi
         } else {
           setFormErrors(prev => ({
             ...prev,
-            submit: result.error.message
+            submit: result.error?.message || 'Erro desconhecido'
           }));
         }
         return;
@@ -536,4 +536,4 @@ export default function InstructorInviteForm({ isOpen, onClose }: InstructorInvi
       </motion.div>
     </motion.div>
   );
-} 
+}
