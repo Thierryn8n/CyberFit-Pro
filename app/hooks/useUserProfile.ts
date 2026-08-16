@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-import { createClient } from "@/lib/supabase/client"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import type { Role } from "../lib/database.types"
 
 export interface UserProfile {
@@ -22,6 +22,18 @@ export function useUserProfile() {
 
   useEffect(() => {
     let mounted = true
+
+    // Preview sem Supabase conectado: usa um perfil de demonstracao para as
+    // telas renderizarem (sem redirecionar para /login). Em producao, com as
+    // variaveis presentes, o fluxo real abaixo e executado normalmente.
+    if (!isSupabaseConfigured) {
+      setProfile({ id: "demo", role: "aluno", full_name: "Aluno Demo", email: "demo@cyberfit.app" })
+      setLoading(false)
+      return () => {
+        mounted = false
+      }
+    }
+
     const supabase = createClient()
 
     async function load() {

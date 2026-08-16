@@ -227,6 +227,31 @@ export interface Database {
         }
         Update: Partial<Database["public"]["Tables"]["pagamentos"]["Insert"]>
       }
+      series_registros: {
+        Row: {
+          id: string
+          aluno_id: string
+          exercicio_id: string
+          treino_id: string | null
+          set_index: number
+          reps: number | null
+          weight: number | null
+          performed_at: string
+          session_date: string
+        }
+        Insert: {
+          id?: string
+          aluno_id: string
+          exercicio_id: string
+          treino_id?: string | null
+          set_index: number
+          reps?: number | null
+          weight?: number | null
+          performed_at?: string
+          session_date?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["series_registros"]["Insert"]>
+      }
     }
     Views: { [_ in never]: never }
     Functions: {

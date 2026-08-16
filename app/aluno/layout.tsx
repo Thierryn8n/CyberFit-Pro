@@ -1,7 +1,7 @@
 import type React from "react"
 
-import DashboardShell from "../components/DashboardShell"
+import AlunoMobileShell from "../components/AlunoMobileShell"
 
 export default function AlunoLayout({ children }: { children: React.ReactNode }) {
-  return <DashboardShell>{children}</DashboardShell>
+  return <AlunoMobileShell>{children}</AlunoMobileShell>
 }
