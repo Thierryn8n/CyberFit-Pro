@@ -1,119 +1,196 @@
-'use client';
+"use client"
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Barbell, Calendar, ChartLineUp, Users } from '@phosphor-icons/react';
-import Sidebar from '../components/Sidebar';
-import { useUserData } from '../hooks/useUserData';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
+import { Barbell, CaretRight, Fire, CheckCircle, Moon } from "@phosphor-icons/react"
 
-export default function AlunoDashboard() {
-  const { stats, atividades, loading, error } = useUserData('aluno');
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
+import { useUserProfile } from "../hooks/useUserProfile"
+import { DIAS_SEMANA, hojeDiaSemana, dataLocalISO, fmtVolume } from "../lib/treino"
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-purple-light">Carregando...</div>
-      </div>
-    );
-  }
+interface TreinoLite {
+  id: string
+  name: string
+  description: string | null
+  day_of_week: number | null
+  exCount: number
+}
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-red-500">{error}</div>
-      </div>
-    );
-  }
+export default function AlunoHome() {
+  const { profile, loading: profileLoading } = useUserProfile()
+  const [treinos, setTreinos] = useState<TreinoLite[]>([])
+  const [weekVolume, setWeekVolume] = useState(0)
+  const [weekSessions, setWeekSessions] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  const hoje = hojeDiaSemana()
+
+  useEffect(() => {
+    if (!profile) return
+    const supabase = createClient()
+
+    async function load() {
+      // Treinos ativos do aluno + contagem de exercicios
+      const { data: tr } = await supabase
+        .from("treinos")
+        .select("id, name, description, day_of_week, exercicios(count)")
+        .eq("aluno_id", profile!.id)
+        .eq("status", "ativo")
+        .order("day_of_week", { ascending: true })
+
+      const list: TreinoLite[] = (tr ?? []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        day_of_week: t.day_of_week,
+        exCount: t.exercicios?.[0]?.count ?? 0,
+      }))
+      setTreinos(list)
+
+      // Resumo da semana (domingo -> hoje) a partir das series registradas
+      const now = new Date()
+      const domingo = new Date(now)
+      domingo.setDate(now.getDate() - now.getDay())
+      const { data: series } = await supabase
+        .from("series_registros")
+        .select("reps, weight, session_date")
+        .eq("aluno_id", profile!.id)
+        .gte("session_date", dataLocalISO(domingo))
+
+      const vol = (series ?? []).reduce((a: number, s: any) => a + (s.reps ?? 0) * (s.weight ?? 0), 0)
+      const dias = new Set((series ?? []).map((s: any) => s.session_date))
+      setWeekVolume(vol)
+      setWeekSessions(dias.size)
+      setLoading(false)
+    }
+
+    load().catch(() => setLoading(false))
+  }, [profile])
+
+  const treinosHoje = useMemo(() => treinos.filter((t) => t.day_of_week === hoje), [treinos, hoje])
+  const diasComTreino = useMemo(() => new Set(treinos.map((t) => t.day_of_week)), [treinos])
+  const busy = profileLoading || loading
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-
-      {/* Main Content */}
-      <main className="ml-64 p-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo(a)!</h2>
-          <p className="text-purple-light/70">Acompanhe seus treinos e evolução</p>
+    <div className="px-5 pt-8">
+      {/* Saudacao */}
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted">
+            {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+          </p>
+          <h1 className="mt-0.5 text-2xl font-bold text-foreground text-balance">
+            Olá, {profile?.full_name?.split(" ")[0] ?? "Aluno"}
+          </h1>
         </div>
+        <Link
+          href="/aluno/perfil"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 text-lg font-bold text-primary"
+          aria-label="Perfil"
+        >
+          {(profile?.full_name ?? "A").charAt(0).toUpperCase()}
+        </Link>
+      </header>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {[
-            {
-              title: 'Treino do Dia',
-              icon: Barbell,
-              description: 'Visualize seu treino atual',
-              value: stats.treinosAtivos ? `${stats.treinosAtivos} treinos ativos` : 'Nenhum treino ativo',
-              color: 'from-purple-500/20 to-accent-blue/20'
-            },
-            {
-              title: 'Agenda',
-              icon: Calendar,
-              description: 'Próximo treino agendado',
-              value: 'Hoje às 18:00',
-              color: 'from-green-500/20 to-emerald-500/20'
-            },
-            {
-              title: 'Progresso',
-              icon: ChartLineUp,
-              description: 'Sua evolução este mês',
-              value: '85% concluído',
-              color: 'from-orange-500/20 to-red-500/20'
-            }
-          ].map((item, index) => (
-            <motion.div
-              key={item.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="relative group"
+      {!isSupabaseConfigured && (
+        <div className="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+          Conecte o Supabase para carregar seus treinos reais.
+        </div>
+      )}
+
+      {/* Faixa de dias da semana */}
+      <div className="mt-6 flex justify-between gap-1">
+        {DIAS_SEMANA.map((d, i) => {
+          const isToday = i === hoje
+          const tem = diasComTreino.has(i)
+          return (
+            <div
+              key={i}
+              className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-2xl border text-xs transition-colors ${
+                isToday
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-border bg-surface text-muted"
+              }`}
             >
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.color} blur-xl opacity-50 group-hover:opacity-70 transition-opacity`} />
-              <button className="relative w-full p-6 rounded-2xl bg-background-card/50 backdrop-blur-sm border border-white/5 hover:border-purple-light/20 transition-all">
-                <item.icon size={32} className="text-purple-light mb-4" weight="duotone" />
-                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-sm text-purple-light/70 mb-2">{item.description}</p>
-                <p className="text-sm font-medium text-white">{item.value}</p>
-              </button>
-            </motion.div>
-          ))}
-        </div>
+              <span className="font-medium">{d.short}</span>
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  tem ? (isToday ? "bg-primary" : "bg-accent") : "bg-transparent"
+                }`}
+                aria-hidden
+              />
+            </div>
+          )
+        })}
+      </div>
 
-        {/* Recent Activity */}
-        <section className="bg-background-card/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">Atividades Recentes</h3>
-          <div className="space-y-4">
-            {atividades.length > 0 ? (
-              atividades.map((atividade) => (
-                <div
-                  key={atividade.id}
-                  className="flex items-center p-4 rounded-xl bg-background/50 border border-white/5"
-                >
-                  <div className="h-10 w-10 rounded-full bg-purple-light/10 flex items-center justify-center">
-                    <Barbell size={20} className="text-purple-light" />
-                  </div>
-                  <div className="ml-4">
-                    <h4 className="text-sm font-medium text-white">{atividade.descricao}</h4>
-                    <p className="text-xs text-purple-light/70">
-                      {formatDistanceToNow(new Date(atividade.data), {
-                        addSuffix: true,
-                        locale: ptBR
-                      })}
-                    </p>
-                  </div>
+      {/* Treino de hoje */}
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Treino de hoje</h2>
+
+        {busy ? (
+          <div className="h-40 animate-pulse rounded-3xl bg-surface" />
+        ) : treinosHoje.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {treinosHoje.map((t) => (
+              <Link
+                key={t.id}
+                href={`/aluno/treino/${t.id}`}
+                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-5 text-primary-foreground shadow-lg shadow-primary/25"
+              >
+                <div className="relative z-10">
+                  <p className="text-xs font-medium uppercase tracking-wide opacity-80">Pronto para treinar</p>
+                  <h3 className="mt-1 text-2xl font-bold text-balance">{t.name}</h3>
+                  <p className="mt-1 text-sm opacity-90">{t.exCount} exercícios</p>
+                  <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-black/20 px-4 py-2 text-sm font-semibold">
+                    Iniciar treino <CaretRight size={16} weight="bold" />
+                  </span>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-purple-light/70">
-                Nenhuma atividade recente
-              </div>
-            )}
+                <Barbell
+                  size={120}
+                  weight="fill"
+                  className="absolute -bottom-4 -right-2 opacity-15"
+                  aria-hidden
+                />
+              </Link>
+            ))}
           </div>
-        </section>
-      </main>
+        ) : (
+          <div className="flex flex-col items-center gap-2 rounded-3xl border border-border bg-surface p-8 text-center">
+            <Moon size={40} className="text-muted" weight="duotone" />
+            <p className="font-medium text-foreground">Dia de descanso</p>
+            <p className="text-sm text-muted">Nenhum treino marcado para hoje. Aproveite para recuperar.</p>
+          </div>
+        )}
+      </section>
+
+      {/* Resumo da semana */}
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Sua semana</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-border bg-surface p-4">
+            <CheckCircle size={22} className="text-success" weight="fill" />
+            <p className="mt-2 text-2xl font-bold text-foreground">{busy ? "–" : weekSessions}</p>
+            <p className="text-xs text-muted">dias treinados</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface p-4">
+            <Fire size={22} className="text-warning" weight="fill" />
+            <p className="mt-2 text-2xl font-bold text-foreground">{busy ? "–" : fmtVolume(weekVolume)}</p>
+            <p className="text-xs text-muted">volume total</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Atalho para todos os treinos */}
+      <Link
+        href="/aluno/treinos"
+        className="mt-6 flex items-center justify-between rounded-2xl border border-border bg-surface p-4 text-sm font-medium text-foreground"
+      >
+        <span className="flex items-center gap-2">
+          <Barbell size={20} className="text-primary" /> Ver todos os treinos da semana
+        </span>
+        <CaretRight size={16} className="text-muted" />
+      </Link>
     </div>
-  );
-} 
+  )
+}
