@@ -217,7 +217,7 @@
      cima), volume real com sombra externa e borda que dá espessura. A "pele"
      (gradiente + sombras + borda) troca conforme o tema via variáveis. */
   .cf-glass {
-    @apply relative rounded-3xl border;
+    @apply relative rounded-3xl border backdrop-blur-2xl backdrop-saturate-150;
     border-color: var(--skeuo-card-border);
     background-image: var(--skeuo-card-grad);
     box-shadow: var(--skeuo-card-shadow);
