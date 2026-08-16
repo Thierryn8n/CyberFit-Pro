@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { generateText } from "ai"
+import { createGateway } from "@ai-sdk/gateway"
 import pg from "pg"
 
 export const runtime = "nodejs"
@@ -71,8 +72,15 @@ function extrairJson(texto: string) {
 }
 
 async function traduzirLote(items: { id: string; name: string }[]) {
+  // A AI_GATEWAY_API_KEY do runtime e um placeholder (v0-...value) e o gateway
+  // a rejeita. Usamos o VERCEL_OIDC_TOKEN, que autentica de verdade. Removemos a
+  // key placeholder do ambiente para o SDK cair no fluxo OIDC.
+  if (process.env.AI_GATEWAY_API_KEY?.endsWith("value")) {
+    delete process.env.AI_GATEWAY_API_KEY
+  }
+  const gw = createGateway({ baseURL: "https://ai-gateway.vercel.sh/v1/ai" })
   const { text } = await generateText({
-    model: MODEL,
+    model: gw(MODEL),
     temperature: 0.2,
     system: SYSTEM,
     prompt: JSON.stringify({ items: items.map((it, i) => ({ i, name: it.name })) }),
@@ -94,7 +102,12 @@ export async function GET(request: Request) {
 
   // Modo diagnostico: retorna quais variaveis o runtime tem (sem expor valores).
   if (searchParams.get("diag") === "1") {
-    return NextResponse.json({ diag: diag() })
+    const k = process.env.AI_GATEWAY_API_KEY ?? ""
+    return NextResponse.json({
+      diag: diag(),
+      aiKey: { len: k.length, prefix: k.slice(0, 4), suffix: k.slice(-3) },
+      hasOidc: Boolean(process.env.VERCEL_OIDC_TOKEN),
+    })
   }
 
   const cs = dbConnString()
@@ -144,6 +157,8 @@ export async function GET(request: Request) {
     )
 
     return NextResponse.json({ processed, remaining: stat[0]?.remaining ?? 0 })
+  } catch (e) {
+    return NextResponse.json({ error: "Falha na traducao", detalhe: (e as Error).message }, { status: 500 })
   } finally {
     await client.end()
   }
