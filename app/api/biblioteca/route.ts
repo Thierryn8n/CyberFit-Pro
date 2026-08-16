@@ -21,10 +21,10 @@ export async function GET(request: NextRequest) {
     })
 
     const facets: BibliotecaResponse["facets"] = {
-      categories: [...result.catCount.entries()]
+      categories: Array.from(result.catCount.entries())
         .map(([value, count]) => ({ value, label: catLabel(value), count }))
         .sort((a, b) => b.count - a.count),
-      equipments: [...result.equipCount.entries()]
+      equipments: Array.from(result.equipCount.entries())
         .map(([value, count]) => ({ value, label: equipLabel(value), count }))
         .sort((a, b) => b.count - a.count),
     }
