@@ -12,6 +12,7 @@ import { mediaUrl, type RawExercise, type ExercicioLite, type ExercicioFull } fr
 interface BibliotecaRow {
   id: string
   name: string
+  name_pt?: string | null
   category: string | null
   body_part: string | null
   equipment: string | null
@@ -42,7 +43,8 @@ function sb(): SupabaseClient {
 function rowToLite(r: BibliotecaRow): ExercicioLite {
   return {
     id: r.id,
-    name: r.name,
+    // Preferimos o nome em portugues; caimos para o ingles quando ainda nao traduzido.
+    name: r.name_pt?.trim() || r.name,
     category: r.category ?? "",
     body_part: r.body_part ?? "",
     equipment: r.equipment ?? "",
