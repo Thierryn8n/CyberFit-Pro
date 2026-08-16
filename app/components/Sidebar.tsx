@@ -13,6 +13,7 @@ import {
   SignOut,
   Money,
   ChalkboardTeacher,
+  BookOpenText,
   UserCircle,
   List,
   X,
@@ -33,6 +34,7 @@ const MENUS: Record<string, MenuItem[]> = {
   aluno: [
     { name: "Dashboard", icon: House, path: "/aluno" },
     { name: "Meus Treinos", icon: Barbell, path: "/aluno/treinos" },
+    { name: "Biblioteca", icon: BookOpenText, path: "/aluno/biblioteca" },
     { name: "Agenda", icon: Calendar, path: "/aluno/agenda" },
     { name: "Progresso", icon: ChartLineUp, path: "/aluno/progresso" },
     { name: "Histórico", icon: ClockCounterClockwise, path: "/aluno/historico" },
@@ -41,6 +43,7 @@ const MENUS: Record<string, MenuItem[]> = {
     { name: "Dashboard", icon: House, path: "/instrutor" },
     { name: "Alunos", icon: Users, path: "/instrutor/alunos" },
     { name: "Treinos", icon: Barbell, path: "/instrutor/treinos" },
+    { name: "Biblioteca", icon: BookOpenText, path: "/instrutor/biblioteca" },
     { name: "Agenda", icon: Calendar, path: "/instrutor/agenda" },
     { name: "Avaliações", icon: ChartLineUp, path: "/instrutor/avaliacoes" },
   ],

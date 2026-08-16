@@ -85,15 +85,21 @@ create table if not exists public.treinos (
 
 -- Exercicios de um treino
 create table if not exists public.exercicios (
-  id           uuid primary key default gen_random_uuid(),
-  treino_id    uuid not null references public.treinos(id) on delete cascade,
-  name         text not null,
-  sets         int,
-  reps         text,
-  rest_seconds int,
-  weight       text,
-  notes        text,
-  order_index  int not null default 0
+  id            uuid primary key default gen_random_uuid(),
+  treino_id     uuid not null references public.treinos(id) on delete cascade,
+  name          text not null,
+  sets          int,
+  reps          text,
+  rest_seconds  int,
+  weight        text,
+  notes         text,
+  order_index   int not null default 0,
+  -- Referencia opcional a Biblioteca de Exercicios (dataset externo, via CDN)
+  biblioteca_id text,
+  gif_url       text,
+  image_url     text,
+  target        text,
+  equipment     text
 );
 
 -- Agenda / aulas
