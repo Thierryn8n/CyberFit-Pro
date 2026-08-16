@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Barbell, Plus, X, CaretDown, Trash } from "@phosphor-icons/react"
+import { useEffect, useMemo, useState } from "react"
+import { Barbell, Plus, X, CaretDown, Trash, Copy, Users, Check, CalendarBlank } from "@phosphor-icons/react"
 
 import { createClient } from "@/lib/supabase/client"
 import { useUserProfile } from "../../hooks/useUserProfile"
 import { PageHeader, EmptyState, Card, Badge } from "../../components/ui"
 import { catLabel, type ExercicioLite } from "../../lib/biblioteca"
 import BibliotecaExercicios from "../../components/BibliotecaExercicios"
+import { criarTreinos, duplicarTreino, type ExercicioPayload } from "../../lib/treino-ops"
 
 interface ExercicioTreino {
   id: string
@@ -27,12 +28,14 @@ interface TreinoRow {
   exercicios: ExercicioTreino[]
 }
 
+type Gender = "masculino" | "feminino" | "outro" | null
+
 interface AlunoOption {
   id: string
+  gender: Gender
   profiles: { full_name: string | null } | null
 }
 
-// Exercicio selecionado no builder (antes de salvar)
 interface Selecionado {
   biblioteca_id: string
   name: string
@@ -46,6 +49,8 @@ interface Selecionado {
 }
 
 const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
+const DIAS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+type GenderFilter = "todos" | "masculino" | "feminino"
 
 export default function TreinosPage() {
   const { profile } = useUserProfile()
@@ -54,10 +59,19 @@ export default function TreinosPage() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
-  const [form, setForm] = useState({ aluno_id: "", name: "", description: "", day_of_week: "1" })
+  const [form, setForm] = useState({ name: "", description: "" })
+  const [alunosSel, setAlunosSel] = useState<string[]>([])
+  const [dias, setDias] = useState<number[]>([1])
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>("todos")
   const [selecionados, setSelecionados] = useState<Selecionado[]>([])
   const [picker, setPicker] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Duplicação
+  const [dupSource, setDupSource] = useState<TreinoRow | null>(null)
+  const [dupTargets, setDupTargets] = useState<string[]>([])
+  const [dupGender, setDupGender] = useState<GenderFilter>("todos")
+  const [dupSaving, setDupSaving] = useState(false)
 
   const load = async () => {
     if (!profile) return
@@ -70,7 +84,7 @@ export default function TreinosPage() {
         )
         .eq("instrutor_id", profile.id)
         .order("created_at", { ascending: false }),
-      supabase.from("alunos").select("id, profiles(full_name)").eq("instrutor_id", profile.id),
+      supabase.from("alunos").select("id, gender, profiles(full_name)").eq("instrutor_id", profile.id),
     ])
     setRows((treinos as unknown as TreinoRow[]) ?? [])
     setAlunos((als as unknown as AlunoOption[]) ?? [])
@@ -105,60 +119,62 @@ export default function TreinosPage() {
 
   const updateSel = (id: string, patch: Partial<Selecionado>) =>
     setSelecionados((prev) => prev.map((s) => (s.biblioteca_id === id ? { ...s, ...patch } : s)))
-
   const removeSel = (id: string) => setSelecionados((prev) => prev.filter((s) => s.biblioteca_id !== id))
 
   const resetForm = () => {
-    setForm({ aluno_id: "", name: "", description: "", day_of_week: "1" })
+    setForm({ name: "", description: "" })
+    setAlunosSel([])
+    setDias([1])
+    setGenderFilter("todos")
     setSelecionados([])
   }
 
+  const toggleDia = (d: number) => setDias((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]))
+  const toggleAluno = (id: string) =>
+    setAlunosSel((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
   const create = async () => {
-    if (!profile || !form.aluno_id || !form.name) return
+    if (!profile || alunosSel.length === 0 || !form.name) return
     setSaving(true)
     const supabase = createClient()
-    const { data: treino, error } = await supabase
-      .from("treinos")
-      .insert({
-        instrutor_id: profile.id,
-        aluno_id: form.aluno_id,
-        name: form.name,
-        description: form.description || null,
-        day_of_week: Number(form.day_of_week),
-      })
-      .select("id")
-      .single()
-
-    if (!error && treino && selecionados.length > 0) {
-      const payload = selecionados.map((s, i) => ({
-        treino_id: treino.id,
-        name: s.name,
-        sets: s.sets ? Number(s.sets) : null,
-        reps: s.reps || null,
-        order_index: i,
-        biblioteca_id: s.biblioteca_id,
-        gif_url: s.gif_url,
-        image_url: s.image_url,
-        target: s.target,
-        equipment: s.equipment,
-      }))
-      const { error: exError } = await supabase.from("exercicios").insert(payload)
-      // Fallback: se as colunas de midia ainda nao existem no banco, salva sem elas
-      if (exError) {
-        const basic = selecionados.map((s, i) => ({
-          treino_id: treino.id,
-          name: s.name,
-          sets: s.sets ? Number(s.sets) : null,
-          reps: s.reps || null,
-          order_index: i,
-        }))
-        await supabase.from("exercicios").insert(basic)
-      }
-    }
-
+    const exercicios: ExercicioPayload[] = selecionados.map((s) => ({
+      name: s.name,
+      sets: s.sets ? Number(s.sets) : null,
+      reps: s.reps || null,
+      biblioteca_id: s.biblioteca_id,
+      gif_url: s.gif_url,
+      image_url: s.image_url,
+      target: s.target,
+      equipment: s.equipment,
+    }))
+    await criarTreinos(supabase, {
+      instrutorId: profile.id,
+      alunoIds: alunosSel,
+      dias,
+      name: form.name,
+      description: form.description || null,
+      exercicios,
+    })
     setSaving(false)
     setOpen(false)
     resetForm()
+    load()
+  }
+
+  const runDuplicate = async () => {
+    if (!profile || !dupSource || dupTargets.length === 0) return
+    setDupSaving(true)
+    const supabase = createClient()
+    await duplicarTreino(supabase, {
+      instrutorId: profile.id,
+      sourceTreinoId: dupSource.id,
+      source: { name: dupSource.name, description: dupSource.description, day_of_week: dupSource.day_of_week },
+      alunoIds: dupTargets,
+    })
+    setDupSaving(false)
+    setDupSource(null)
+    setDupTargets([])
+    setDupGender("todos")
     load()
   }
 
@@ -171,7 +187,7 @@ export default function TreinosPage() {
           <button
             onClick={() => setOpen(true)}
             disabled={alunos.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-neon transition hover:bg-primary/90 disabled:opacity-50"
+            className="cf-btn-primary !px-4 !py-2.5 text-sm disabled:opacity-50"
           >
             <Plus size={18} weight="bold" /> Novo treino
           </button>
@@ -197,46 +213,53 @@ export default function TreinosPage() {
             const exs = [...(t.exercicios ?? [])]
             return (
               <Card key={t.id} className="p-0">
-                <button
-                  onClick={() => setOpenId(expanded ? null : t.id)}
-                  className="flex w-full items-center gap-4 p-5 text-left"
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 text-accent">
-                    <Barbell size={22} weight="duotone" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-medium text-foreground">{t.name}</h3>
-                    <p className="text-xs text-muted">
-                      {t.alunos?.profiles?.full_name ?? "Sem aluno"}
-                      {t.day_of_week != null ? ` · ${DIAS[t.day_of_week]}` : ""}
-                    </p>
-                  </div>
-                  <Badge tone="primary">{exs.length} exercícios</Badge>
-                  <Badge tone={t.status === "ativo" ? "success" : "muted"}>{t.status}</Badge>
-                  <CaretDown size={18} className={`text-muted transition ${expanded ? "rotate-180" : ""}`} />
-                </button>
+                <div className="flex w-full items-center gap-3 p-4">
+                  <button onClick={() => setOpenId(expanded ? null : t.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <div className="cf-emboss flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+                      <Barbell size={22} weight="duotone" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate font-medium text-foreground">{t.name}</h3>
+                      <p className="truncate text-xs text-muted">
+                        {t.alunos?.profiles?.full_name ?? "Sem aluno"}
+                        {t.day_of_week != null ? ` · ${DIAS[t.day_of_week]}` : ""}
+                      </p>
+                    </div>
+                  </button>
+                  <Badge tone="primary">{exs.length} ex.</Badge>
+                  <button
+                    onClick={() => {
+                      setDupSource(t)
+                      setDupTargets([])
+                    }}
+                    aria-label="Duplicar treino"
+                    title="Duplicar para outros alunos"
+                    className="cf-inset flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-2 text-foreground transition-colors hover:text-primary"
+                  >
+                    <Copy size={17} weight="duotone" />
+                  </button>
+                  <button onClick={() => setOpenId(expanded ? null : t.id)} aria-label="Expandir" className="shrink-0">
+                    <CaretDown size={18} className={`text-muted transition ${expanded ? "rotate-180" : ""}`} />
+                  </button>
+                </div>
 
                 {expanded && (
                   <div className="border-t border-border px-5 py-4">
                     {t.description && <p className="mb-3 text-sm text-muted">{t.description}</p>}
                     {exs.length ? (
-                      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <ul className="grid grid-cols-1 gap-2">
                         {exs.map((ex) => (
-                          <li key={ex.id} className="flex items-center gap-3 rounded-lg bg-background p-2">
+                          <li key={ex.id} className="flex items-center gap-3 rounded-xl bg-surface-2 p-2">
                             {ex.gif_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={ex.gif_url || "/placeholder.svg"}
-                                alt={ex.name}
-                                className="h-12 w-12 shrink-0 rounded-md object-cover"
-                              />
+                              <img src={ex.gif_url || "/placeholder.svg"} alt={ex.name} className="h-12 w-12 shrink-0 rounded-md object-cover" />
                             ) : (
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-surface-2 text-muted">
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-background text-muted">
                                 <Barbell size={20} />
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm text-foreground">{ex.name}</p>
+                              <p className="truncate text-sm capitalize text-foreground">{ex.name}</p>
                               <p className="text-xs text-muted">
                                 {ex.sets ?? "?"}x{ex.reps ?? "?"}
                               </p>
@@ -257,9 +280,9 @@ export default function TreinosPage() {
 
       {/* Modal criar treino */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
           <button aria-label="Fechar" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="animate-fade-in relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden cf-card p-0">
+          <div className="animate-fade-in relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden cf-card !rounded-b-none p-0 sm:!rounded-3xl">
             <div className="flex items-center justify-between border-b border-border p-5">
               <h3 className="text-lg font-semibold">Novo treino</h3>
               <button onClick={() => setOpen(false)} aria-label="Fechar" className="text-muted hover:text-foreground">
@@ -268,44 +291,55 @@ export default function TreinosPage() {
             </div>
 
             <div className="overflow-y-auto p-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm text-muted">Aluno</label>
-                  <select
-                    value={form.aluno_id}
-                    onChange={(e) => setForm({ ...form, aluno_id: e.target.value })}
-                    className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-foreground outline-none focus:border-primary"
-                  >
-                    <option value="">Selecione...</option>
-                    {alunos.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.profiles?.full_name ?? "Aluno"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm text-muted">Dia da semana</label>
-                  <select
-                    value={form.day_of_week}
-                    onChange={(e) => setForm({ ...form, day_of_week: e.target.value })}
-                    className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-foreground outline-none focus:border-primary"
-                  >
-                    {DIAS.map((d, i) => (
-                      <option key={d} value={i}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Alunos (multi-seleção + filtro por sexo) */}
+              <div className="mb-2 flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <Users size={16} className="text-primary" /> Alunos {alunosSel.length > 0 && `(${alunosSel.length})`}
+                </label>
+                <GenderFilterTabs value={genderFilter} onChange={setGenderFilter} />
               </div>
+              <AlunoPicker
+                alunos={alunos}
+                filter={genderFilter}
+                selected={alunosSel}
+                onToggle={toggleAluno}
+                onSelectAll={(ids) => setAlunosSel(ids)}
+                onClear={() => setAlunosSel([])}
+              />
 
-              <label className="mb-1 mt-4 block text-sm text-muted">Nome do treino</label>
+              {/* Dias da semana (multi) */}
+              <label className="mb-2 mt-5 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                <CalendarBlank size={16} className="text-primary" /> Dias da semana
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {DIAS_SHORT.map((d, i) => {
+                  const active = dias.includes(i)
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => toggleDia(i)}
+                      className={`rounded-xl border px-3 py-2 text-xs font-medium transition-all ${
+                        active ? "cf-emboss border-transparent text-primary-foreground" : "border-border bg-surface-2 text-muted hover:text-foreground"
+                      }`}
+                      style={active ? { backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" } : undefined}
+                    >
+                      {d}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-1.5 text-xs text-muted">
+                {dias.length > 1
+                  ? `O treino será criado em ${dias.length} dias para cada aluno selecionado.`
+                  : "Selecione um ou mais dias."}
+              </p>
+
+              <label className="mb-1 mt-5 block text-sm text-muted">Nome do treino</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Treino A - Peito e tríceps"
-                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-foreground outline-none focus:border-primary"
+                className="cf-input !px-4"
               />
 
               <label className="mb-1 mt-4 block text-sm text-muted">Observações</label>
@@ -313,10 +347,10 @@ export default function TreinosPage() {
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}
-                className="w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-foreground outline-none focus:border-primary"
+                className="cf-input !px-4 resize-none"
               />
 
-              {/* Exercicios selecionados */}
+              {/* Exercícios */}
               <div className="mt-5 flex items-center justify-between">
                 <label className="block text-sm font-medium text-foreground">
                   Exercícios {selecionados.length > 0 && `(${selecionados.length})`}
@@ -336,7 +370,7 @@ export default function TreinosPage() {
               ) : (
                 <ul className="mt-2 space-y-2">
                   {selecionados.map((s) => (
-                    <li key={s.biblioteca_id} className="flex items-center gap-3 rounded-xl bg-background p-2.5">
+                    <li key={s.biblioteca_id} className="flex items-center gap-3 rounded-xl bg-surface-2 p-2.5">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={s.gif_url || s.image_url || "/placeholder.svg"} alt={s.name} className="h-14 w-14 shrink-0 rounded-lg object-cover" />
                       <div className="min-w-0 flex-1">
@@ -361,11 +395,7 @@ export default function TreinosPage() {
                           <span className="text-xs text-muted">reps</span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => removeSel(s.biblioteca_id)}
-                        aria-label="Remover"
-                        className="text-muted transition hover:text-danger"
-                      >
+                      <button onClick={() => removeSel(s.biblioteca_id)} aria-label="Remover" className="text-muted transition hover:text-danger">
                         <Trash size={18} />
                       </button>
                     </li>
@@ -375,12 +405,50 @@ export default function TreinosPage() {
             </div>
 
             <div className="border-t border-border p-5">
-              <button
-                onClick={create}
-                disabled={saving || !form.aluno_id || !form.name}
-                className="w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground shadow-neon transition hover:bg-primary/90 disabled:opacity-50"
-              >
-                {saving ? "Salvando..." : "Criar treino"}
+              <button onClick={create} disabled={saving || alunosSel.length === 0 || !form.name} className="cf-btn-primary w-full disabled:opacity-50">
+                {saving
+                  ? "Salvando..."
+                  : `Criar ${alunosSel.length * Math.max(dias.length, 1)} treino(s)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal duplicar */}
+      {dupSource && (
+        <div className="fixed inset-0 z-[55] flex items-end justify-center sm:items-center sm:p-4">
+          <button aria-label="Fechar" onClick={() => setDupSource(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="animate-fade-in relative flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden cf-card !rounded-b-none p-0 sm:!rounded-3xl">
+            <div className="flex items-center justify-between border-b border-border p-5">
+              <div className="min-w-0">
+                <h3 className="truncate text-lg font-semibold">Duplicar treino</h3>
+                <p className="truncate text-xs text-muted">{dupSource.name}</p>
+              </div>
+              <button onClick={() => setDupSource(null)} aria-label="Fechar" className="text-muted hover:text-foreground">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-5">
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-sm font-medium text-foreground">Copiar para {dupTargets.length > 0 && `(${dupTargets.length})`}</label>
+                <GenderFilterTabs value={dupGender} onChange={setDupGender} />
+              </div>
+              <AlunoPicker
+                alunos={alunos}
+                filter={dupGender}
+                selected={dupTargets}
+                onToggle={(id) => setDupTargets((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))}
+                onSelectAll={(ids) => setDupTargets(ids)}
+                onClear={() => setDupTargets([])}
+              />
+              <p className="mt-3 text-xs text-muted">
+                Mantém o mesmo dia ({dupSource.day_of_week != null ? DIAS[dupSource.day_of_week] : "sem dia"}) e todos os exercícios.
+              </p>
+            </div>
+            <div className="border-t border-border p-5">
+              <button onClick={runDuplicate} disabled={dupSaving || dupTargets.length === 0} className="cf-btn-primary w-full disabled:opacity-50">
+                {dupSaving ? "Duplicando..." : `Duplicar para ${dupTargets.length} aluno(s)`}
               </button>
             </div>
           </div>
@@ -397,23 +465,102 @@ export default function TreinosPage() {
                 <h3 className="text-lg font-semibold">Biblioteca de Exercícios</h3>
                 <p className="text-xs text-muted">{selecionados.length} selecionado(s)</p>
               </div>
-              <button
-                onClick={() => setPicker(false)}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-              >
+              <button onClick={() => setPicker(false)} className="cf-btn-primary !px-4 !py-2 text-sm">
                 Concluir
               </button>
             </div>
             <div className="overflow-y-auto p-5">
-              <BibliotecaExercicios
-                mode="picker"
-                onPick={addExercicio}
-                pickedIds={selecionados.map((s) => s.biblioteca_id)}
-              />
+              <BibliotecaExercicios mode="picker" onPick={addExercicio} pickedIds={selecionados.map((s) => s.biblioteca_id)} />
             </div>
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function GenderFilterTabs({ value, onChange }: { value: GenderFilter; onChange: (v: GenderFilter) => void }) {
+  const opts: { v: GenderFilter; label: string }[] = [
+    { v: "todos", label: "Todos" },
+    { v: "masculino", label: "Masc." },
+    { v: "feminino", label: "Fem." },
+  ]
+  return (
+    <div className="cf-inset flex gap-0.5 rounded-xl border border-border bg-surface-2 p-0.5">
+      {opts.map((o) => (
+        <button
+          key={o.v}
+          onClick={() => onChange(o.v)}
+          className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all ${
+            value === o.v ? "bg-primary text-primary-foreground" : "text-muted hover:text-foreground"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function AlunoPicker({
+  alunos,
+  filter,
+  selected,
+  onToggle,
+  onSelectAll,
+  onClear,
+}: {
+  alunos: AlunoOption[]
+  filter: GenderFilter
+  selected: string[]
+  onToggle: (id: string) => void
+  onSelectAll: (ids: string[]) => void
+  onClear: () => void
+}) {
+  const filtered = useMemo(
+    () => (filter === "todos" ? alunos : alunos.filter((a) => a.gender === filter)),
+    [alunos, filter],
+  )
+  const allIds = filtered.map((a) => a.id)
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.includes(id))
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2">
+        <button
+          onClick={() => (allSelected ? onClear() : onSelectAll(allIds))}
+          className="rounded-lg bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-foreground transition hover:bg-primary hover:text-primary-foreground"
+        >
+          {allSelected ? "Limpar seleção" : "Selecionar todos"}
+        </button>
+        {filtered.length === 0 && <span className="text-xs text-muted">Nenhum aluno neste filtro.</span>}
+      </div>
+      <div className="grid max-h-44 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
+        {filtered.map((a) => {
+          const on = selected.includes(a.id)
+          return (
+            <button
+              key={a.id}
+              onClick={() => onToggle(a.id)}
+              className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all ${
+                on ? "border-primary bg-primary/10" : "border-border bg-surface-2 hover:border-primary/40"
+              }`}
+            >
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                  on ? "border-transparent bg-primary text-primary-foreground" : "border-border"
+                }`}
+              >
+                {on && <Check size={13} weight="bold" />}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{a.profiles?.full_name ?? "Aluno"}</span>
+              {a.gender && (
+                <span className="shrink-0 text-[10px] uppercase text-muted">{a.gender === "masculino" ? "M" : a.gender === "feminino" ? "F" : "-"}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

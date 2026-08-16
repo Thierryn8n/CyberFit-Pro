@@ -23,6 +23,7 @@ import {
 import { cn } from "../lib/utils"
 import { signOut } from "../lib/auth"
 import { useUserProfile } from "../hooks/useUserProfile"
+import ThemeToggle from "./ThemeToggle"
 
 interface MenuItem {
   name: string
@@ -183,13 +184,16 @@ export default function Sidebar() {
           </div>
           <span className="font-heading font-semibold">CyberFit Pro</span>
         </div>
-        <button
-          onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menu"
-          className="rounded-xl p-2 text-muted hover:bg-surface-2 hover:text-foreground"
-        >
-          <List size={22} />
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="!h-9 !w-9 !rounded-xl border border-border" />
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menu"
+            className="rounded-xl p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+          >
+            <List size={22} />
+          </button>
+        </div>
       </header>
 
       {/* Sidebar desktop */}

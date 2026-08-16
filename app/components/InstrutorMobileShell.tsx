@@ -17,6 +17,7 @@ import {
 
 import { signOut } from "../lib/auth"
 import { useUserProfile } from "../hooks/useUserProfile"
+import ThemeToggle from "./ThemeToggle"
 
 interface Tab {
   name: string
@@ -72,6 +73,7 @@ export default function InstrutorMobileShell({ children }: { children: React.Rea
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <ThemeToggle className="!h-9 !w-9 !rounded-xl border border-border" />
           <Link
             href="/instrutor/biblioteca"
             aria-label="Biblioteca"
