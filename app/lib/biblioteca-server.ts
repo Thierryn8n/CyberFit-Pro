@@ -13,10 +13,10 @@ interface Cache {
 const g = globalThis as unknown as { __cf_biblioteca?: Cache; __cf_loading?: Promise<Cache> }
 
 async function loadDataset(): Promise<Cache> {
-  const res = await fetch(EXERCISES_JSON_URL, {
-    // Revalida no CDN a cada 24h; o cache em memoria evita refetch dentro da instancia.
-    next: { revalidate: 86400 },
-  })
+  // "no-store": o dataset tem ~23MB e estoura o limite de 2MB do Data Cache do Next.
+  // O cache em memoria (globalThis) abaixo garante que o download ocorra uma unica vez
+  // por instancia do servidor, entao nao ha refetch a cada requisicao.
+  const res = await fetch(EXERCISES_JSON_URL, { cache: "no-store" })
   if (!res.ok) throw new Error(`Falha ao baixar o dataset (${res.status})`)
   const raw = (await res.json()) as RawExercise[]
   const byId = new Map<string, RawExercise>()

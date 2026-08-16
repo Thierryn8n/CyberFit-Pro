@@ -131,6 +131,11 @@ export interface Database {
           weight: string | null
           notes: string | null
           order_index: number
+          biblioteca_id: string | null
+          gif_url: string | null
+          image_url: string | null
+          target: string | null
+          equipment: string | null
         }
         Insert: {
           treino_id: string
@@ -141,6 +146,11 @@ export interface Database {
           weight?: string | null
           notes?: string | null
           order_index?: number
+          biblioteca_id?: string | null
+          gif_url?: string | null
+          image_url?: string | null
+          target?: string | null
+          equipment?: string | null
         }
         Update: Partial<Database["public"]["Tables"]["exercicios"]["Insert"]>
       }
