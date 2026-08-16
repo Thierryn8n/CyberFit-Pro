@@ -1,15 +1,19 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { MagnifyingGlass, X, Barbell, Plus, Check, SpinnerGap } from "@phosphor-icons/react"
+import { MagnifyingGlass, X, Barbell, Plus, Check, SpinnerGap, Translate } from "@phosphor-icons/react"
 
 import {
   fetchBiblioteca,
   fetchExercicio,
+  traduzirExercicio,
+  traduzirLoteBiblioteca,
+  aplicarTraducao,
   catLabel,
   equipLabel,
   muscleLabel,
   idiomaLabel,
+  IDIOMA_PREFERENCIA,
   type ExercicioLite,
   type ExercicioFull,
   type Idioma,
@@ -40,6 +44,15 @@ export default function BibliotecaExercicios({ mode = "browse", onPick, pickedId
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  // Estado do botao "Traduzir tudo" (traduz nomes e instrucoes de toda a
+  // biblioteca em lote, salvando direto no banco).
+  const [translatingAll, setTranslatingAll] = useState(false)
+  const [translateProgress, setTranslateProgress] = useState<{ etapa: "nomes" | "instrucoes"; remaining: number } | null>(
+    null,
+  )
+  const stopTranslateRef = useRef(false)
 
   // Debounce da busca
   useEffect(() => {
@@ -66,7 +79,7 @@ export default function BibliotecaExercicios({ mode = "browse", onPick, pickedId
         setLoading(false)
       }
     },
-    [debouncedQ, category, equipment, page],
+    [debouncedQ, category, equipment, page, reloadKey],
   )
 
   useEffect(() => {
@@ -75,7 +88,39 @@ export default function BibliotecaExercicios({ mode = "browse", onPick, pickedId
     return () => ctrl.abort()
   }, [load])
 
+  useEffect(() => {
+    return () => {
+      stopTranslateRef.current = true
+    }
+  }, [])
+
   const hasMore = data ? items.length < data.total : false
+
+  // Dispara a traducao em lote de toda a biblioteca (nomes, depois
+  // instrucoes), chamando a rota repetidamente ate zerar o "remaining".
+  // A cada lote os itens ja traduzidos no banco, entao recarregamos a lista
+  // periodicamente para o instrutor ver o progresso em tempo real.
+  const handleTraduzirTudo = useCallback(async () => {
+    if (translatingAll) return
+    setTranslatingAll(true)
+    stopTranslateRef.current = false
+    try {
+      for (const etapa of ["nomes", "instrucoes"] as const) {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          if (stopTranslateRef.current) return
+          const res = await traduzirLoteBiblioteca(etapa, 60)
+          if (!res) break
+          setTranslateProgress({ etapa, remaining: res.remaining })
+          setReloadKey((k) => k + 1)
+          if (res.remaining <= 0 || res.processed === 0) break
+        }
+      }
+    } finally {
+      setTranslatingAll(false)
+      setTranslateProgress(null)
+    }
+  }, [translatingAll])
 
   return (
     <div>
@@ -102,6 +147,24 @@ export default function BibliotecaExercicios({ mode = "browse", onPick, pickedId
             </option>
           ))}
         </select>
+        <button
+          onClick={handleTraduzirTudo}
+          disabled={translatingAll}
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition",
+            translatingAll
+              ? "cursor-not-allowed bg-surface-2 text-muted"
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
+          )}
+          title="Traduz todos os nomes e instruções da biblioteca para português e salva no banco"
+        >
+          {translatingAll ? <SpinnerGap size={16} className="animate-spin" /> : <Translate size={16} weight="bold" />}
+          {translatingAll
+            ? translateProgress
+              ? `Traduzindo ${translateProgress.etapa === "nomes" ? "nomes" : "instruções"}... (${translateProgress.remaining} restantes)`
+              : "Traduzindo..."
+            : "Traduzir tudo"}
+        </button>
       </div>
 
       {/* Chips de categoria */}
@@ -231,8 +294,9 @@ export default function BibliotecaExercicios({ mode = "browse", onPick, pickedId
 
 function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [ex, setEx] = useState<ExercicioFull | null>(null)
-  const [lang, setLang] = useState<Idioma>("en")
+  const [lang, setLang] = useState<Idioma | null>(null)
   const [loading, setLoading] = useState(true)
+  const [autoTranslating, setAutoTranslating] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -249,6 +313,28 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     }
   }, [id])
 
+  // Traducao automatica "on-demand": se o nome ou a instrucao ainda nao tem
+  // pt-BR salvo, pede a traducao em segundo plano e atualiza a tela assim
+  // que chega, sem precisar recarregar nada.
+  useEffect(() => {
+    if (!ex) return
+    const precisaNome = !ex.name_translated
+    const precisaInstrucao = !ex.instructions.pt && !ex.instruction_steps.pt
+    if (!precisaNome && !precisaInstrucao) return
+    let active = true
+    setAutoTranslating(true)
+    traduzirExercicio(ex.id).then((t) => {
+      if (!active) return
+      setAutoTranslating(false)
+      if (t) setEx((prev) => (prev ? aplicarTraducao(prev, t) : prev))
+    })
+    return () => {
+      active = false
+    }
+    // Dispara so quando o id muda (evita loop: aplicarTraducao gera um novo ex).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ex?.id])
+
   useEffect(() => {
     closeRef.current?.focus()
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
@@ -257,8 +343,19 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   }, [onClose])
 
   const langs = ex ? (Object.keys(ex.instructions) as Idioma[]).filter((l) => ex.instructions[l]) : []
-  const steps = ex?.instruction_steps?.[lang]
-  const text = ex?.instructions?.[lang]
+
+  // Escolhe o idioma exibido por padrao (pt sempre que disponivel) sempre que
+  // a lista de idiomas mudar (ex.: apos a traducao automatica chegar).
+  useEffect(() => {
+    if (langs.length === 0) return
+    if (lang && langs.includes(lang)) return
+    const preferido = IDIOMA_PREFERENCIA.find((l) => langs.includes(l)) ?? langs[0]
+    setLang(preferido)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [langs.join(","), lang])
+
+  const steps = ex && lang ? ex.instruction_steps?.[lang] : undefined
+  const text = ex && lang ? ex.instructions?.[lang] : undefined
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -288,6 +385,11 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
               <div className="p-5">
                 <h2 className="text-xl font-semibold text-balance text-foreground">{titleCase(ex.name)}</h2>
+                {autoTranslating && (
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                    <SpinnerGap size={12} className="animate-spin" /> Traduzindo automaticamente para português...
+                  </p>
+                )}
                 <div className="mt-3 space-y-2 text-sm">
                   <Row label="Grupo" value={catLabel(ex.category)} />
                   <Row label="Equipamento" value={equipLabel(ex.equipment)} />
@@ -311,7 +413,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 <h3 className="font-medium text-foreground">Como executar</h3>
                 {langs.length > 1 && (
                   <select
-                    value={lang}
+                    value={lang ?? ""}
                     onChange={(e) => setLang(e.target.value as Idioma)}
                     className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
                   >

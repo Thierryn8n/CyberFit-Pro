@@ -44,6 +44,8 @@ export interface ExercicioFull extends ExercicioLite {
   instructions: Partial<Record<Idioma, string>>
   instruction_steps: Partial<Record<Idioma, string[]>>
   attribution: string
+  /** true quando o nome exibido ja e a traducao pt-BR (e nao o fallback em ingles). */
+  name_translated: boolean
 }
 
 export interface BibliotecaResponse {
@@ -205,6 +207,68 @@ export async function fetchExercicioPorNome(name: string): Promise<ExercicioFull
     return await fetchExercicio(match.id)
   } catch {
     return null
+  }
+}
+
+export interface TraducaoUnica {
+  name_pt: string | null
+  instructions_pt: string | null
+  instruction_steps_pt: string[] | null
+}
+
+// Pede a traducao "on-demand" de UM exercicio (nome + instrucao). Chamada
+// automaticamente quando o instrutor ou o aluno abre um exercicio que ainda
+// nao tem pt-BR salvo. Retorna null silenciosamente em caso de falha (o app
+// simplesmente continua mostrando o idioma de fallback).
+export async function traduzirExercicio(id: string): Promise<TraducaoUnica | null> {
+  try {
+    const res = await fetch(`/api/biblioteca/${id}/traduzir/`, { method: "POST" })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+export interface TraducaoLoteResultado {
+  modo: "nomes" | "instrucoes"
+  processed: number
+  remaining: number
+}
+
+// Traduz um lote (nomes OU instrucoes) direto no banco. Usado pelo botao
+// "Traduzir tudo" do painel do instrutor - chame repetidamente ate
+// `remaining` chegar a 0.
+export async function traduzirLoteBiblioteca(
+  modo: "nomes" | "instrucoes",
+  limit = 60,
+): Promise<TraducaoLoteResultado | null> {
+  try {
+    const res = await fetch("/api/admin/traduzir-tudo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modo, limit }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+// Aplica o resultado de uma traducao on-demand em um ExercicioFull ja
+// carregado, atualizando nome/instrucoes/flags sem precisar recarregar.
+export function aplicarTraducao(ex: ExercicioFull, t: TraducaoUnica): ExercicioFull {
+  const instructions = { ...ex.instructions }
+  const instruction_steps = { ...ex.instruction_steps }
+  if (t.instructions_pt) instructions.pt = t.instructions_pt
+  if (t.instruction_steps_pt && t.instruction_steps_pt.length > 0) instruction_steps.pt = t.instruction_steps_pt
+  return {
+    ...ex,
+    name: t.name_pt || ex.name,
+    name_translated: Boolean(t.name_pt) || ex.name_translated,
+    instructions,
+    instruction_steps,
   }
 }
 

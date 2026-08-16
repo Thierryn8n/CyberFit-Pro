@@ -20,10 +20,11 @@ import {
   fetchExercicio,
   fetchExercicioPorNome,
   resolverInstrucao,
+  traduzirExercicio,
+  aplicarTraducao,
   catLabel,
   equipLabel,
   muscleLabel,
-  idiomaLabel,
   type ExercicioFull,
 } from "../lib/biblioteca"
 
@@ -81,6 +82,7 @@ export default function ExercicioPlayer({
   const [detail, setDetail] = useState<ExercicioFull | null>(exercicio.full ?? null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailTentado, setDetailTentado] = useState(Boolean(exercicio.full))
+  const [autoTranslating, setAutoTranslating] = useState(false)
   const media = exercicio.gif_url || exercicio.image_url || ""
 
   // Ao abrir "Ver mais", busca o detalhe completo da biblioteca (grupo, alvo,
@@ -114,6 +116,28 @@ export default function ExercicioPlayer({
   }, [exercicio.id, exercicio.full])
 
   const instrucao = useMemo(() => (detail ? resolverInstrucao(detail) : null), [detail])
+
+  // Traducao automatica "on-demand": quando o aluno abre "Ver mais" e o
+  // nome/instrucao do exercicio ainda nao tem pt-BR salvo, pede a traducao em
+  // segundo plano e atualiza a tela assim que chega (sem recarregar nada).
+  useEffect(() => {
+    if (!detail) return
+    const precisaNome = !detail.name_translated
+    const precisaInstrucao = !detail.instructions.pt && !detail.instruction_steps.pt
+    if (!precisaNome && !precisaInstrucao) return
+    let active = true
+    setAutoTranslating(true)
+    traduzirExercicio(detail.id).then((t) => {
+      if (!active) return
+      setAutoTranslating(false)
+      if (t) setDetail((prev) => (prev ? aplicarTraducao(prev, t) : prev))
+    })
+    return () => {
+      active = false
+    }
+    // Dispara so quando o exercicio detalhado muda (evita loop de re-traducao).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail?.id])
 
   // Carrega series ja registradas hoje + a ultima sessao anterior (comparativo)
   useEffect(() => {
@@ -341,10 +365,10 @@ export default function ExercicioPlayer({
                       <p className="text-sm text-muted">Sem instruções disponíveis para este exercício.</p>
                     )}
 
-                    {/* Aviso quando a traducao pt-BR ainda nao esta disponivel */}
-                    {instrucao && instrucao.lang && instrucao.lang !== "pt" && (instrucao.steps.length > 0 || instrucao.text) && (
-                      <p className="mt-3 border-t border-border pt-2 text-[11px] text-muted">
-                        Tradução em português em processamento — exibindo em {idiomaLabel(instrucao.lang)}.
+                    {/* Aviso enquanto a traducao automatica pt-BR ainda esta em andamento */}
+                    {autoTranslating && (
+                      <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-2 text-[11px] text-muted">
+                        <SpinnerGap size={12} className="animate-spin" /> Traduzindo automaticamente para português...
                       </p>
                     )}
                     {detail.attribution && (
