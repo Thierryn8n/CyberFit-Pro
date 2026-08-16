@@ -24,6 +24,8 @@ interface BibliotecaRow {
   media_id: string | null
   instructions: Record<string, string> | null
   instruction_steps: Record<string, string[]> | null
+  instructions_pt: string | null
+  instruction_steps_pt: string[] | null
   attribution: string | null
 }
 
@@ -56,11 +58,18 @@ function rowToLite(r: BibliotecaRow): ExercicioLite {
 }
 
 function rowToFull(r: BibliotecaRow): ExercicioFull {
+  // Injeta a traducao pt-BR (colunas dedicadas) nos mapas de instrucao para
+  // que a UI possa selecionar o idioma "pt" como qualquer outro.
+  const instructions = { ...(r.instructions ?? {}) }
+  const instruction_steps = { ...(r.instruction_steps ?? {}) }
+  if (r.instructions_pt && r.instructions_pt.trim()) instructions.pt = r.instructions_pt
+  if (r.instruction_steps_pt && r.instruction_steps_pt.length > 0) instruction_steps.pt = r.instruction_steps_pt
+
   return {
     ...rowToLite(r),
     muscle_group: r.muscle_group ?? "",
-    instructions: r.instructions ?? {},
-    instruction_steps: r.instruction_steps ?? {},
+    instructions,
+    instruction_steps,
     attribution: r.attribution ?? "© Gym visual — https://gymvisual.com/",
   }
 }

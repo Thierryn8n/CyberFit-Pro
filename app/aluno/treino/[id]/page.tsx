@@ -8,7 +8,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { useUserProfile } from "../../../hooks/useUserProfile"
 import ExercicioPlayer, { type PlayerExercicio } from "../../../components/ExercicioPlayer"
 import { dataLocalISO } from "../../../lib/treino"
-import { fetchBiblioteca, mediaUrl, midiaPorBibliotecaId, midiaPorNome } from "../../../lib/biblioteca"
+import { fetchBiblioteca, fetchExercicio, mediaUrl, midiaPorNome, muscleLabel } from "../../../lib/biblioteca"
 
 export default function SessaoTreino() {
   const { id } = useParams<{ id: string }>()
@@ -40,6 +40,7 @@ export default function SessaoTreino() {
             image_url: it.image,
             target: it.target,
             equipment: it.equipment,
+            biblioteca_id: it.id,
           })),
         )
       } catch {
@@ -94,13 +95,25 @@ export default function SessaoTreino() {
         biblioteca_id: e.biblioteca_id ?? null,
       })) as PlayerExercicio[]
 
-      // Enriquecimento: recupera midia/descricao faltante direto da biblioteca,
-      // usando biblioteca_id (preferencial) ou o nome do exercicio.
+      // Enriquecimento: busca o detalhe completo da biblioteca (nome em pt-BR,
+      // midia, ficha e passo a passo) para que o aluno veja tudo em portugues.
       list = await Promise.all(
         list.map(async (e) => {
+          const full = e.biblioteca_id ? await fetchExercicio(e.biblioteca_id).catch(() => null) : null
+          if (full) {
+            return {
+              ...e,
+              name: full.name || e.name,
+              gif_url: e.gif_url || full.gif || null,
+              image_url: e.image_url || full.image || null,
+              target: e.target || full.target || null,
+              equipment: e.equipment || full.equipment || null,
+              full,
+            }
+          }
+          // Sem biblioteca_id (ou falhou): recupera ao menos a midia pelo nome.
           if (e.gif_url || e.image_url) return e
-          const midia =
-            (e.biblioteca_id ? await midiaPorBibliotecaId(e.biblioteca_id) : null) ?? (await midiaPorNome(e.name))
+          const midia = await midiaPorNome(e.name)
           if (!midia) return e
           return {
             ...e,
@@ -108,7 +121,6 @@ export default function SessaoTreino() {
             image_url: midia.image || null,
             target: e.target || midia.target || null,
             equipment: e.equipment || midia.equipment || null,
-            notes: e.notes || midia.instructions || null,
           }
         }),
       )
@@ -204,7 +216,7 @@ export default function SessaoTreino() {
                   <p className="mt-0.5 text-sm text-muted">
                     {Math.max(1, ex.sets ?? 3)} séries x {ex.reps || "–"} reps
                   </p>
-                  {ex.target && <p className="mt-0.5 truncate text-xs text-primary">{ex.target}</p>}
+                  {ex.target && <p className="mt-0.5 truncate text-xs text-primary">{muscleLabel(ex.target)}</p>}
                 </div>
                 {done ? (
                   <CheckCircle size={24} weight="fill" className="text-success" />
