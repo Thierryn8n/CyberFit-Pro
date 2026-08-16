@@ -49,7 +49,7 @@ export default function InstrutorDashboard() {
         action={<InviteButton targetRole="aluno" label="Convidar aluno" />}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3">
         <StatCard label="Meus alunos" value={busy ? "–" : stats.alunos} icon={Users} accent="primary" />
         <StatCard label="Treinos ativos" value={busy ? "–" : stats.treinos} icon={Barbell} accent="accent" />
         <StatCard label="Aulas agendadas" value={busy ? "–" : stats.agenda} icon={Calendar} accent="success" />
@@ -66,7 +66,7 @@ export default function InstrutorDashboard() {
           />
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-4">
           <Card>
             <h3 className="mb-1 text-lg font-medium">Monte treinos</h3>
             <p className="text-sm text-muted">

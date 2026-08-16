@@ -94,7 +94,7 @@ export function Badge({
   tone?: "muted" | "success" | "warning" | "danger" | "primary"
 }) {
   const map = {
-    muted: "bg-white/5 text-muted border border-white/10",
+    muted: "bg-surface-2 text-muted border border-border",
     success: "bg-success/15 text-success border border-success/20",
     warning: "bg-warning/15 text-warning border border-warning/20",
     danger: "bg-danger/15 text-danger border border-danger/20",

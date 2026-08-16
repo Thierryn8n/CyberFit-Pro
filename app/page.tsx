@@ -59,7 +59,7 @@ export default function HomePage() {
           </Link>
           <Link
             href="/login"
-            className="cf-glass inline-flex w-full items-center justify-center gap-2 px-4 py-3 font-medium text-foreground transition-colors hover:bg-white/10 sm:w-auto"
+            className="cf-glass inline-flex w-full items-center justify-center gap-2 px-4 py-3 font-medium text-foreground transition-colors hover:bg-surface-2 sm:w-auto"
           >
             Já tenho conta
           </Link>

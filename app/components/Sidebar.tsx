@@ -104,7 +104,7 @@ export default function Sidebar() {
 
       {/* Perfil do usuário */}
       <div className="px-4 pb-4">
-        <div className="cf-inset flex items-center gap-3 rounded-2xl border border-white/5 bg-black/20 p-3">
+        <div className="cf-inset flex items-center gap-3 rounded-2xl border border-border bg-surface-2 p-3">
           <div className="cf-emboss flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/40 to-accent-2/40">
             <UserCircle size={24} weight="fill" className="text-primary" />
           </div>
@@ -132,7 +132,7 @@ export default function Sidebar() {
                 "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all",
                 active
                   ? "cf-emboss text-primary-foreground"
-                  : "text-muted hover:bg-white/5 hover:text-foreground",
+                  : "text-muted hover:bg-surface-2 hover:text-foreground",
               )}
               style={
                 active
@@ -148,13 +148,13 @@ export default function Sidebar() {
       </nav>
 
       {/* Ações inferiores */}
-      <div className="space-y-1 border-t border-white/10 p-4">
+      <div className="space-y-1 border-t border-border p-4">
         <button
           onClick={() => {
             router.push(`/${profile?.role}/configuracoes`)
             setMobileOpen(false)
           }}
-          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-white/5 hover:text-foreground"
+          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-surface-2 hover:text-foreground"
         >
           <Gear size={20} />
           <span>Configurações</span>
@@ -173,7 +173,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Topbar mobile */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-2xl backdrop-saturate-150 lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-2xl backdrop-saturate-150 lg:hidden">
         <div className="flex items-center gap-2">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-xl"
@@ -186,14 +186,14 @@ export default function Sidebar() {
         <button
           onClick={() => setMobileOpen(true)}
           aria-label="Abrir menu"
-          className="rounded-xl p-2 text-muted hover:bg-white/5 hover:text-foreground"
+          className="rounded-xl p-2 text-muted hover:bg-surface-2 hover:text-foreground"
         >
           <List size={22} />
         </button>
       </header>
 
       {/* Sidebar desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-white/10 bg-white/[0.03] backdrop-blur-2xl backdrop-saturate-150 lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface-2 backdrop-blur-2xl backdrop-saturate-150 lg:block">
         {navContent}
       </aside>
 
@@ -205,11 +205,11 @@ export default function Sidebar() {
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
-          <div className="animate-fade-in absolute inset-y-0 left-0 w-72 max-w-[85%] border-r border-white/10 bg-white/[0.06] backdrop-blur-2xl backdrop-saturate-150">
+          <div className="animate-fade-in absolute inset-y-0 left-0 w-72 max-w-[85%] border-r border-border bg-surface-2 backdrop-blur-2xl backdrop-saturate-150">
             <button
               onClick={() => setMobileOpen(false)}
               aria-label="Fechar menu"
-              className="absolute right-3 top-4 rounded-xl p-2 text-muted hover:bg-white/5 hover:text-foreground"
+              className="absolute right-3 top-4 rounded-xl p-2 text-muted hover:bg-surface-2 hover:text-foreground"
             >
               <X size={20} />
             </button>

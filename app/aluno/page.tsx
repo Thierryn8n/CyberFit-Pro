@@ -100,7 +100,7 @@ export default function AlunoHome() {
       )}
 
       {/* Faixa de dias da semana */}
-      <div className="cf-inset mt-6 flex justify-between gap-1.5 rounded-3xl border border-white/5 bg-black/20 p-2">
+      <div className="cf-inset mt-6 flex justify-between gap-1.5 rounded-3xl border border-border bg-surface-2 p-2">
         {DIAS_SEMANA.map((d, i) => {
           const isToday = i === hoje
           const tem = diasComTreino.has(i)
@@ -135,7 +135,7 @@ export default function AlunoHome() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Treino de hoje</h2>
 
         {busy ? (
-          <div className="h-40 animate-pulse rounded-3xl bg-white/[0.03]" />
+          <div className="h-40 animate-pulse rounded-3xl bg-surface-2" />
         ) : treinosHoje.length > 0 ? (
           <div className="flex flex-col gap-3">
             {treinosHoje.map((t) => (
@@ -149,7 +149,7 @@ export default function AlunoHome() {
                   <p className="text-xs font-medium uppercase tracking-wide opacity-80">Pronto para treinar</p>
                   <h3 className="mt-1 font-heading text-2xl font-bold text-balance">{t.name}</h3>
                   <p className="mt-1 text-sm opacity-90">{t.exCount} exercícios</p>
-                  <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-black/25 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
+                  <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
                     Iniciar treino <CaretRight size={16} weight="bold" />
                   </span>
                 </div>

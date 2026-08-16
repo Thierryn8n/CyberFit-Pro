@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    /* CyberFit — base violeta profunda com brilhos ciano e magenta */
-    --background: 260 48% 4%;
-    --surface: 258 38% 8%;
-    --surface-2: 256 32% 13%;
-    --foreground: 210 40% 98%;
-    --muted: 250 16% 68%;
-    --border: 258 28% 24%;
+    /* CyberFit — tema claro: base branca com preto e roxo */
+    --background: 264 40% 98%;
+    --surface: 0 0% 100%;
+    --surface-2: 264 30% 95%;
+    --foreground: 260 30% 10%;
+    --muted: 258 12% 42%;
+    --border: 260 22% 88%;
 
-    --primary: 262 88% 64%;
+    --primary: 262 83% 55%;
     --primary-foreground: 0 0% 100%;
-    --accent: 190 95% 55%;
-    --accent-2: 322 88% 62%;
+    --accent: 250 78% 60%;
+    --accent-2: 275 74% 56%;
 
-    --success: 152 60% 48%;
-    --warning: 38 92% 55%;
-    --danger: 0 84% 62%;
+    --success: 152 58% 40%;
+    --warning: 32 92% 48%;
+    --danger: 0 78% 55%;
 
-    --glass-bg: 258 40% 60%;
+    --glass-bg: 262 60% 96%;
     --radius: 1.25rem;
   }
 
@@ -45,10 +45,10 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(48% 38% at 12% 8%, hsl(var(--primary) / 0.38), transparent 70%),
-    radial-gradient(42% 34% at 92% 14%, hsl(var(--accent) / 0.28), transparent 70%),
-    radial-gradient(55% 45% at 50% 100%, hsl(var(--accent-2) / 0.22), transparent 70%),
-    radial-gradient(80% 60% at 50% 0%, hsl(258 45% 10%), hsl(var(--background)) 70%);
+    radial-gradient(45% 35% at 10% 6%, hsl(var(--primary) / 0.12), transparent 70%),
+    radial-gradient(40% 32% at 94% 12%, hsl(var(--accent) / 0.1), transparent 70%),
+    radial-gradient(55% 45% at 50% 102%, hsl(var(--accent-2) / 0.1), transparent 70%),
+    radial-gradient(90% 70% at 50% -10%, hsl(264 60% 99%), hsl(var(--background)) 65%);
 }
 
 .cf-noise {
@@ -56,9 +56,9 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.5;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
 /* Scrollbar */
@@ -87,20 +87,19 @@
      borda inferior sombreada que dá espessura à peça, como um objeto
      esculpido pousado sobre a mesa. */
   .cf-glass {
-    @apply relative rounded-3xl border border-white/10 backdrop-blur-2xl backdrop-saturate-150;
+    @apply relative rounded-3xl border border-white/70;
     background-image:
-      linear-gradient(180deg, hsl(0 0% 100% / 0.09) 0%, hsl(0 0% 100% / 0.02) 22%, hsl(258 40% 8% / 0.28) 100%);
+      linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(264 40% 99%) 55%, hsl(264 32% 96%) 100%);
     box-shadow:
-      /* bisel superior iluminado */
-      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.22),
-      inset 0 2px 6px 0 hsl(0 0% 100% / 0.08),
-      /* espessura / borda inferior escura */
-      inset 0 -2px 4px 0 hsl(260 60% 2% / 0.55),
-      inset 0 0 0 1px hsl(0 0% 100% / 0.03),
-      /* contato / sombra projetada, volumétrica */
-      0 2px 4px -1px hsl(260 60% 2% / 0.5),
-      0 18px 40px -12px hsl(260 60% 2% / 0.7),
-      0 30px 60px -24px hsl(262 88% 20% / 0.5);
+      /* bisel superior iluminado (luz vinda de cima) */
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.9),
+      inset 0 2px 4px 0 hsl(0 0% 100% / 0.7),
+      /* espessura / borda inferior sombreada */
+      inset 0 -2px 3px 0 hsl(260 30% 70% / 0.28),
+      /* contato + sombra projetada suave e volumétrica */
+      0 1px 2px 0 hsl(260 40% 40% / 0.08),
+      0 10px 24px -10px hsl(262 55% 45% / 0.28),
+      0 24px 48px -22px hsl(262 60% 40% / 0.25);
   }
 
   .cf-card {
@@ -110,19 +109,19 @@
   /* Campo "esculpido": parece afundado na superfície, com sombra interna
      no topo e um brilho fino embaixo simulando a borda embutida. */
   .cf-input {
-    @apply w-full rounded-2xl border border-black/40 bg-black/25 px-10 py-3 text-foreground
-      placeholder:text-muted backdrop-blur-sm transition-all
-      focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/25;
+    @apply w-full rounded-2xl border border-border bg-surface-2 px-10 py-3 text-foreground
+      placeholder:text-muted transition-all
+      focus:border-primary/60 focus:outline-none;
     box-shadow:
-      inset 0 2px 5px 0 hsl(260 60% 2% / 0.6),
-      inset 0 1px 1px 0 hsl(260 60% 2% / 0.5),
-      0 1px 0 0 hsl(0 0% 100% / 0.06);
+      inset 0 2px 4px 0 hsl(260 30% 55% / 0.22),
+      inset 0 1px 1px 0 hsl(260 30% 55% / 0.18),
+      0 1px 0 0 hsl(0 0% 100% / 0.8);
   }
   .cf-input:focus {
     box-shadow:
-      inset 0 2px 5px 0 hsl(260 60% 2% / 0.6),
-      0 0 0 3px hsl(var(--primary) / 0.25),
-      0 1px 0 0 hsl(0 0% 100% / 0.06);
+      inset 0 2px 4px 0 hsl(260 30% 55% / 0.2),
+      0 0 0 3px hsl(var(--primary) / 0.2),
+      0 1px 0 0 hsl(0 0% 100% / 0.8);
   }
 
   /* Botão tátil: verniz superior brilhante, bisel iluminado e sombra de
@@ -132,23 +131,23 @@
       font-heading font-semibold text-primary-foreground transition-all duration-150
       focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
     background-image:
-      linear-gradient(180deg, hsl(0 0% 100% / 0.28), hsl(0 0% 100% / 0) 45%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.35), hsl(0 0% 100% / 0) 45%),
       linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)));
     box-shadow:
-      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.45),
-      inset 0 -3px 6px 0 hsl(262 88% 20% / 0.55),
-      0 3px 0 0 hsl(262 70% 34% / 0.9),
-      0 8px 18px -4px hsl(262 88% 30% / 0.6);
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.55),
+      inset 0 -3px 6px 0 hsl(262 88% 30% / 0.4),
+      0 3px 0 0 hsl(262 60% 40%),
+      0 10px 20px -6px hsl(262 80% 45% / 0.5);
   }
   .cf-btn-primary:hover {
-    @apply brightness-110;
+    @apply brightness-105;
   }
   .cf-btn-primary:active {
     transform: translateY(3px);
     box-shadow:
-      inset 0 2px 6px 0 hsl(262 88% 12% / 0.6),
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.2),
-      0 1px 4px -2px hsl(262 88% 20% / 0.5);
+      inset 0 2px 6px 0 hsl(262 88% 25% / 0.5),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.3),
+      0 1px 4px -2px hsl(262 88% 30% / 0.5);
   }
 }
 
@@ -168,27 +167,26 @@
     color: transparent;
   }
   .shadow-neon {
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3), 0 8px 32px -4px hsl(var(--primary) / 0.45), 0 0 40px -8px
-      hsl(var(--accent-2) / 0.35);
+    box-shadow: 0 6px 16px -4px hsl(var(--primary) / 0.4), 0 12px 32px -8px hsl(var(--accent-2) / 0.35);
   }
   .cf-glow-ring {
-    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.25), 0 0 24px hsl(var(--accent) / 0.2);
+    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.2), 0 6px 18px -6px hsl(var(--accent) / 0.4);
   }
   /* Plaqueta em relevo: badge físico com verniz no topo, bisel iluminado
      e sombra de apoio — usado nas plaquinhas de ícone por todo o app. */
   .cf-emboss {
     box-shadow:
-      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.4),
-      inset 0 -2px 4px 0 hsl(262 88% 18% / 0.55),
-      0 2px 4px -1px hsl(260 60% 2% / 0.5),
-      0 6px 14px -4px hsl(262 88% 30% / 0.5);
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.55),
+      inset 0 -2px 4px 0 hsl(262 88% 30% / 0.35),
+      0 2px 4px -1px hsl(260 40% 40% / 0.2),
+      0 6px 14px -4px hsl(262 70% 45% / 0.4);
   }
   /* Superfície pressionada: parece afundada, boa para trilhos e áreas
      inativas que recebem elementos em relevo por cima. */
   .cf-inset {
     box-shadow:
-      inset 0 2px 5px 0 hsl(260 60% 2% / 0.5),
-      inset 0 -1px 0 0 hsl(0 0% 100% / 0.05);
+      inset 0 2px 5px 0 hsl(260 30% 55% / 0.25),
+      inset 0 -1px 0 0 hsl(0 0% 100% / 0.7);
   }
   .animate-fade-in {
     animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
