@@ -1,10 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
+// Compatibilidade: mantem o import antigo `import { supabase } from './supabase'`
+// funcionando, agora usando o client @supabase/ssr com cookies.
+import { createClient } from "@/lib/supabase/client"
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL');
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY');
-
-export const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-); 
+export const supabase = createClient()
+export { createClient }

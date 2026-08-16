@@ -1,189 +1,206 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useRouter, usePathname } from 'next/navigation';
-import { 
-  Barbell, 
-  House, 
-  Calendar, 
-  ChartLineUp, 
-  Users, 
+"use client"
+
+import { useState } from "react"
+import { useRouter, usePathname } from "next/navigation"
+import {
+  Barbell,
+  House,
+  Calendar,
+  ChartLineUp,
+  Users,
   ClockCounterClockwise,
   Gear,
   SignOut,
   Money,
   ChalkboardTeacher,
   UserCircle,
-  Bell,
-  Spinner,
-  Buildings
-} from '@phosphor-icons/react';
-import { cn } from '../lib/utils';
-import { signOut } from '../lib/auth';
-import { useUserProfile } from '../hooks/useUserProfile';
+  List,
+  X,
+  type Icon,
+} from "@phosphor-icons/react"
 
-interface UserStats {
-  academia?: {
-    nome: string;
-    logo_url?: string;
-  };
-}
-
-interface UserProfile {
-  profile_type: 'aluno' | 'instrutor' | 'academia';
-  full_name: string;
-  stats?: UserStats;
-}
+import { cn } from "../lib/utils"
+import { signOut } from "../lib/auth"
+import { useUserProfile } from "../hooks/useUserProfile"
 
 interface MenuItem {
-  name: string;
-  icon: any;
-  path: string;
+  name: string
+  icon: Icon
+  path: string
+}
+
+const MENUS: Record<string, MenuItem[]> = {
+  aluno: [
+    { name: "Dashboard", icon: House, path: "/aluno" },
+    { name: "Meus Treinos", icon: Barbell, path: "/aluno/treinos" },
+    { name: "Agenda", icon: Calendar, path: "/aluno/agenda" },
+    { name: "Progresso", icon: ChartLineUp, path: "/aluno/progresso" },
+    { name: "Histórico", icon: ClockCounterClockwise, path: "/aluno/historico" },
+  ],
+  instrutor: [
+    { name: "Dashboard", icon: House, path: "/instrutor" },
+    { name: "Alunos", icon: Users, path: "/instrutor/alunos" },
+    { name: "Treinos", icon: Barbell, path: "/instrutor/treinos" },
+    { name: "Agenda", icon: Calendar, path: "/instrutor/agenda" },
+    { name: "Avaliações", icon: ChartLineUp, path: "/instrutor/avaliacoes" },
+  ],
+  academia: [
+    { name: "Dashboard", icon: House, path: "/academia" },
+    { name: "Instrutores", icon: ChalkboardTeacher, path: "/academia/instrutores" },
+    { name: "Alunos", icon: Users, path: "/academia/alunos" },
+    { name: "Financeiro", icon: Money, path: "/academia/financeiro" },
+    { name: "Relatórios", icon: ChartLineUp, path: "/academia/relatorios" },
+  ],
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  aluno: "Aluno",
+  instrutor: "Instrutor",
+  academia: "Academia",
+}
+
+function toTitle(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ")
 }
 
 export default function Sidebar() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { profile, loading, error } = useUserProfile();
+  const router = useRouter()
+  const pathname = usePathname()
+  const { profile, loading } = useUserProfile()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleSignOut = async () => {
-    const result = await signOut();
-    if (result.success) {
-      router.push('/');
-    }
-  };
-
-  const menuItems: Record<string, MenuItem[]> = {
-    aluno: [
-      { name: 'Dashboard', icon: House, path: '/aluno' },
-      { name: 'Meus Treinos', icon: Barbell, path: '/aluno/treinos' },
-      { name: 'Agenda', icon: Calendar, path: '/aluno/agenda' },
-      { name: 'Progresso', icon: ChartLineUp, path: '/aluno/progresso' },
-      { name: 'Histórico', icon: ClockCounterClockwise, path: '/aluno/historico' },
-    ],
-    instrutor: [
-      { name: 'Dashboard', icon: House, path: '/instrutor' },
-      { name: 'Alunos', icon: Users, path: '/instrutor/alunos' },
-      { name: 'Treinos', icon: Barbell, path: '/instrutor/treinos' },
-      { name: 'Agenda', icon: Calendar, path: '/instrutor/agenda' },
-      { name: 'Avaliações', icon: ChartLineUp, path: '/instrutor/avaliacoes' },
-    ],
-    academia: [
-      { name: 'Dashboard', icon: House, path: '/academia' },
-      { name: 'Instrutores', icon: ChalkboardTeacher, path: '/academia/instrutores' },
-      { name: 'Alunos', icon: Users, path: '/academia/alunos' },
-      { name: 'Financeiro', icon: Money, path: '/academia/financeiro' },
-      { name: 'Relatórios', icon: ChartLineUp, path: '/academia/relatorios' },
-    ],
-  };
-
-  if (loading) {
-    return (
-      <motion.aside
-        initial={{ x: -300, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-screen w-64 bg-background-card/80 backdrop-blur-xl border-r border-white/5 flex items-center justify-center"
-      >
-        <Spinner size={32} className="text-purple-light animate-spin" />
-      </motion.aside>
-    );
+    await signOut()
+    router.push("/login")
   }
 
-  if (error || !profile) {
-    return (
-      <motion.aside
-        initial={{ x: -300, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-screen w-64 bg-background-card/80 backdrop-blur-xl border-r border-white/5 flex items-center justify-center"
-      >
-        <div className="text-red-500">Erro ao carregar perfil</div>
-      </motion.aside>
-    );
-  }
+  const menuItems = profile ? (MENUS[profile.role] ?? []) : []
 
-  return (
-    <motion.aside
-      initial={{ x: -300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className="fixed left-0 top-0 h-screen w-64 bg-background-card/80 backdrop-blur-xl border-r border-white/5"
-    >
+  const navContent = (
+    <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-8">
-        {profile?.profile_type === 'instrutor' && profile?.stats?.academia ? (
-          <div className="flex items-center gap-3">
-            <Buildings size={32} weight="duotone" className="text-purple-light" />
-            <div>
-              <h1 className="text-xl font-semibold text-white">{profile.stats.academia.nome}</h1>
-              <p className="text-sm text-purple-light/70">Academia</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <Barbell size={32} weight="duotone" className="text-purple-light" />
-            <h1 className="text-xl font-semibold text-white">CyberFit Pro</h1>
-          </>
-        )}
-      </div>
-
-      {/* User Profile */}
-      <div className="px-4 mb-8">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-background/50 border border-white/5">
-          <div className="h-10 w-10 rounded-full bg-purple-light/10 flex items-center justify-center">
-            <UserCircle size={24} className="text-purple-light" weight="fill" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">
-              {profile?.full_name ? profile.full_name.split(' ').map(word => 
-                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-              ).join(' ') : 'Usuário'}
-            </p>
-            <p className="text-xs text-purple-light/70 capitalize">
-              {profile?.profile_type === 'instrutor' ? 'Instrutor' : profile?.profile_type || 'Carregando...'}
-            </p>
-          </div>
-          <button className="relative group">
-            <Bell size={20} className="text-purple-light/70 group-hover:text-purple-light transition-colors" />
-            <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-accent-blue" />
-          </button>
+      <div className="flex items-center gap-3 px-6 py-6">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+          <Barbell size={22} weight="duotone" className="text-primary" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-semibold text-foreground">
+            {profile?.role === "instrutor" && profile.academiaName ? profile.academiaName : "CyberFit Pro"}
+          </h1>
+          {profile?.role === "instrutor" && profile.academiaName && (
+            <p className="text-xs text-muted">Academia</p>
+          )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="px-4 space-y-2">
-        {menuItems[profile.profile_type].map((item) => (
-          <button
-            key={item.path}
-            onClick={() => router.push(item.path)}
-            className={cn(
-              "flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all",
-              pathname === item.path
-                ? "bg-purple text-white shadow-neon"
-                : "text-purple-light/70 hover:bg-purple/10 hover:text-purple-light"
-            )}
-          >
-            <item.icon size={20} weight={pathname === item.path ? "fill" : "regular"} />
-            <span className="text-sm font-medium">{item.name}</span>
-          </button>
-        ))}
+      {/* Perfil do usuário */}
+      <div className="px-4 pb-4">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-background/50 p-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+            <UserCircle size={24} weight="fill" className="text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">
+              {loading ? "Carregando..." : toTitle(profile?.full_name ?? "Usuário")}
+            </p>
+            <p className="text-xs text-muted">{profile ? ROLE_LABEL[profile.role] : ""}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navegação */}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-4">
+        {menuItems.map((item) => {
+          const active = pathname === item.path
+          return (
+            <button
+              key={item.path}
+              onClick={() => {
+                router.push(item.path)
+                setMobileOpen(false)
+              }}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
+                active ? "bg-primary text-primary-foreground shadow-neon" : "text-muted hover:bg-surface-2 hover:text-foreground",
+              )}
+            >
+              <item.icon size={20} weight={active ? "fill" : "regular"} />
+              <span>{item.name}</span>
+            </button>
+          )
+        })}
       </nav>
 
-      {/* Bottom Actions */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+      {/* Ações inferiores */}
+      <div className="space-y-1 border-t border-border p-4">
         <button
-          onClick={() => router.push(`/${profile.profile_type}/configuracoes`)}
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-purple-light/70 hover:bg-purple/10 hover:text-purple-light transition-all"
+          onClick={() => {
+            router.push(`/${profile?.role}/configuracoes`)
+            setMobileOpen(false)
+          }}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-surface-2 hover:text-foreground"
         >
           <Gear size={20} />
-          <span className="text-sm font-medium">Configurações</span>
+          <span>Configurações</span>
         </button>
-        
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500/70 hover:bg-red-500/10 hover:text-red-500 transition-all"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-danger/80 transition-all hover:bg-danger/10 hover:text-danger"
         >
           <SignOut size={20} />
-          <span className="text-sm font-medium">Sair</span>
+          <span>Sair</span>
         </button>
       </div>
-    </motion.aside>
-  );
-} 
+    </div>
+  )
+
+  return (
+    <>
+      {/* Topbar mobile */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-md lg:hidden">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
+            <Barbell size={18} weight="duotone" className="text-primary" />
+          </div>
+          <span className="font-semibold">CyberFit Pro</span>
+        </div>
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="Abrir menu"
+          className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+        >
+          <List size={22} />
+        </button>
+      </header>
+
+      {/* Sidebar desktop */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface/80 backdrop-blur-md lg:block">
+        {navContent}
+      </aside>
+
+      {/* Drawer mobile */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            aria-label="Fechar menu"
+            onClick={() => setMobileOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <div className="animate-fade-in absolute inset-y-0 left-0 w-72 max-w-[85%] border-r border-border bg-surface">
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Fechar menu"
+              className="absolute right-3 top-4 rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+            >
+              <X size={20} />
+            </button>
+            {navContent}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
