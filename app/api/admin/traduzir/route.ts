@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server"
 
-import { generateText } from "ai"
-import { createGateway } from "@ai-sdk/gateway"
 import pg from "pg"
 
 export const runtime = "nodejs"
 export const maxDuration = 300
 
 // Rota administrativa TEMPORARIA para traduzir os nomes dos exercicios da
-// biblioteca para pt-BR usando o AI Gateway (que funciona dentro do runtime).
-// Faz tudo via conexao Postgres direta (DDL + UPDATE), sem depender das
-// variaveis NEXT_PUBLIC. Protegida por segredo. Pode ser chamada repetidamente
-// ate "remaining" chegar a zero.
+// biblioteca para pt-BR usando a API gratuita da NVIDIA NIM (compativel com o
+// formato OpenAI). Faz tudo via conexao Postgres direta (DDL + UPDATE), sem
+// depender das variaveis NEXT_PUBLIC. Protegida por segredo. Pode ser chamada
+// repetidamente ate "remaining" chegar a zero.
 
-const MODEL = "openai/gpt-4o-mini"
-const BATCH = 40
+const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+const MODEL = "meta/llama-3.3-70b-instruct"
+const BATCH = 30
 const SECRET = "cyberfit-traduzir-2026"
 
 const SYSTEM = `Voce e um tradutor especialista em musculacao e fitness do Brasil.
@@ -71,20 +70,38 @@ function extrairJson(texto: string) {
   return JSON.parse(semCerca.slice(inicio, fim + 1))
 }
 
+function nvidiaKey(): string | null {
+  return process.env.NVIDIA_API_KEY || process.env.NVIDIA_NIM_API_KEY || process.env.NVAPI_KEY || null
+}
+
 async function traduzirLote(items: { id: string; name: string }[]) {
-  // A AI_GATEWAY_API_KEY do runtime e um placeholder (v0-...value) e o gateway
-  // a rejeita. Usamos o VERCEL_OIDC_TOKEN, que autentica de verdade. Removemos a
-  // key placeholder do ambiente para o SDK cair no fluxo OIDC.
-  if (process.env.AI_GATEWAY_API_KEY?.endsWith("value")) {
-    delete process.env.AI_GATEWAY_API_KEY
-  }
-  const gw = createGateway({ baseURL: "https://ai-gateway.vercel.sh/v1/ai" })
-  const { text } = await generateText({
-    model: gw(MODEL),
-    temperature: 0.2,
-    system: SYSTEM,
-    prompt: JSON.stringify({ items: items.map((it, i) => ({ i, name: it.name })) }),
+  const key = nvidiaKey()
+  if (!key) throw new Error("NVIDIA_API_KEY ausente no runtime")
+
+  const res = await fetch(NVIDIA_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      temperature: 0.2,
+      max_tokens: 2048,
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: JSON.stringify({ items: items.map((it, i) => ({ i, name: it.name })) }) },
+      ],
+    }),
   })
+
+  if (!res.ok) {
+    const t = await res.text()
+    throw new Error(`NVIDIA ${res.status}: ${t.slice(0, 300)}`)
+  }
+
+  const data = await res.json()
+  const text: string = data.choices?.[0]?.message?.content ?? "{}"
   const parsed = extrairJson(text)
   const arr = parsed.items ?? parsed.translations ?? []
   const map = new Map<number, string>()
@@ -102,11 +119,10 @@ export async function GET(request: Request) {
 
   // Modo diagnostico: retorna quais variaveis o runtime tem (sem expor valores).
   if (searchParams.get("diag") === "1") {
-    const k = process.env.AI_GATEWAY_API_KEY ?? ""
+    const nk = nvidiaKey() ?? ""
     return NextResponse.json({
       diag: diag(),
-      aiKey: { len: k.length, prefix: k.slice(0, 4), suffix: k.slice(-3) },
-      hasOidc: Boolean(process.env.VERCEL_OIDC_TOKEN),
+      nvidiaKey: { present: Boolean(nk), len: nk.length, prefix: nk.slice(0, 6) },
     })
   }
 
