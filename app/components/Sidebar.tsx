@@ -23,6 +23,7 @@ import {
 import { cn } from "../lib/utils"
 import { signOut } from "../lib/auth"
 import { useUserProfile } from "../hooks/useUserProfile"
+import ThemeToggle from "./ThemeToggle"
 
 interface MenuItem {
   name: string
@@ -86,11 +87,14 @@ export default function Sidebar() {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-          <Barbell size={22} weight="duotone" className="text-primary" />
+        <div
+          className="cf-emboss flex h-10 w-10 items-center justify-center rounded-2xl"
+          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
+        >
+          <Barbell size={22} weight="duotone" className="text-primary-foreground" />
         </div>
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold text-foreground">
+          <h1 className="truncate font-heading text-lg font-semibold text-foreground">
             {profile?.role === "instrutor" && profile.academiaName ? profile.academiaName : "CyberFit Pro"}
           </h1>
           {profile?.role === "instrutor" && profile.academiaName && (
@@ -101,8 +105,8 @@ export default function Sidebar() {
 
       {/* Perfil do usuário */}
       <div className="px-4 pb-4">
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-background/50 p-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+        <div className="cf-inset flex items-center gap-3 rounded-2xl border border-border bg-surface-2 p-3">
+          <div className="cf-emboss flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/40 to-accent-2/40">
             <UserCircle size={24} weight="fill" className="text-primary" />
           </div>
           <div className="min-w-0 flex-1">
@@ -126,9 +130,16 @@ export default function Sidebar() {
                 setMobileOpen(false)
               }}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
-                active ? "bg-primary text-primary-foreground shadow-neon" : "text-muted hover:bg-surface-2 hover:text-foreground",
+                "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all",
+                active
+                  ? "cf-emboss text-primary-foreground"
+                  : "text-muted hover:bg-surface-2 hover:text-foreground",
               )}
+              style={
+                active
+                  ? { backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }
+                  : undefined
+              }
             >
               <item.icon size={20} weight={active ? "fill" : "regular"} />
               <span>{item.name}</span>
@@ -144,14 +155,14 @@ export default function Sidebar() {
             router.push(`/${profile?.role}/configuracoes`)
             setMobileOpen(false)
           }}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-surface-2 hover:text-foreground"
+          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-surface-2 hover:text-foreground"
         >
           <Gear size={20} />
           <span>Configurações</span>
         </button>
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-danger/80 transition-all hover:bg-danger/10 hover:text-danger"
+          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-danger/80 transition-all hover:bg-danger/10 hover:text-danger"
         >
           <SignOut size={20} />
           <span>Sair</span>
@@ -163,24 +174,30 @@ export default function Sidebar() {
   return (
     <>
       {/* Topbar mobile */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-md lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-2xl backdrop-saturate-150 lg:hidden">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
-            <Barbell size={18} weight="duotone" className="text-primary" />
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-xl"
+            style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
+          >
+            <Barbell size={18} weight="duotone" className="text-primary-foreground" />
           </div>
-          <span className="font-semibold">CyberFit Pro</span>
+          <span className="font-heading font-semibold">CyberFit Pro</span>
         </div>
-        <button
-          onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menu"
-          className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
-        >
-          <List size={22} />
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="!h-9 !w-9 !rounded-xl border border-border" />
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menu"
+            className="rounded-xl p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+          >
+            <List size={22} />
+          </button>
+        </div>
       </header>
 
       {/* Sidebar desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface/80 backdrop-blur-md lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface-2 backdrop-blur-2xl backdrop-saturate-150 lg:block">
         {navContent}
       </aside>
 
@@ -192,11 +209,11 @@ export default function Sidebar() {
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
-          <div className="animate-fade-in absolute inset-y-0 left-0 w-72 max-w-[85%] border-r border-border bg-surface">
+          <div className="animate-fade-in absolute inset-y-0 left-0 w-72 max-w-[85%] border-r border-border bg-surface-2 backdrop-blur-2xl backdrop-saturate-150">
             <button
               onClick={() => setMobileOpen(false)}
               aria-label="Fechar menu"
-              className="absolute right-3 top-4 rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+              className="absolute right-3 top-4 rounded-xl p-2 text-muted hover:bg-surface-2 hover:text-foreground"
             >
               <X size={20} />
             </button>

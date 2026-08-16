@@ -13,6 +13,7 @@ export interface Database {
           email: string | null
           phone: string | null
           avatar_url: string | null
+          theme_preference: "dark" | "light" | null
           created_at: string
           updated_at: string
         }
@@ -23,6 +24,7 @@ export interface Database {
           email?: string | null
           phone?: string | null
           avatar_url?: string | null
+          theme_preference?: "dark" | "light" | null
         }
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>
       }
@@ -68,6 +70,14 @@ export interface Database {
           height_cm: number | null
           goal: string | null
           plan_status: "ativo" | "inativo" | "pendente"
+          gender: "masculino" | "feminino" | "outro" | null
+          activity_level: string | null
+          waist_cm: number | null
+          hip_cm: number | null
+          arm_cm: number | null
+          thigh_cm: number | null
+          chest_cm: number | null
+          onboarding_completed: boolean
           created_at: string
         }
         Insert: {
@@ -80,6 +90,14 @@ export interface Database {
           height_cm?: number | null
           goal?: string | null
           plan_status?: "ativo" | "inativo" | "pendente"
+          gender?: "masculino" | "feminino" | "outro" | null
+          activity_level?: string | null
+          waist_cm?: number | null
+          hip_cm?: number | null
+          arm_cm?: number | null
+          thigh_cm?: number | null
+          chest_cm?: number | null
+          onboarding_completed?: boolean
         }
         Update: Partial<Database["public"]["Tables"]["alunos"]["Insert"]>
       }

@@ -1,7 +1,7 @@
 import type React from "react"
 
-import DashboardShell from "../components/DashboardShell"
+import InstrutorMobileShell from "../components/InstrutorMobileShell"
 
 export default function InstrutorLayout({ children }: { children: React.ReactNode }) {
-  return <DashboardShell>{children}</DashboardShell>
+  return <InstrutorMobileShell>{children}</InstrutorMobileShell>
 }

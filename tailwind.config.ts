@@ -28,13 +28,17 @@ const config: Config = {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
-        accent: "hsl(var(--accent))",
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          2: "hsl(var(--accent-2))",
+        },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         danger: "hsl(var(--danger))",
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        heading: ["var(--font-heading)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

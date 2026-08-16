@@ -3,24 +3,156 @@
 @tailwind utilities;
 
 @layer base {
+  /* =====================================================================
+     TEMA ESCURO — padrão (:root). Base preta arroxeada, detalhes em roxo.
+     ===================================================================== */
   :root {
-    /* Paleta CyberFit: fundo escuro azulado + roxo neon + ciano de apoio */
-    --background: 222 47% 6%;
-    --surface: 224 39% 10%;
-    --surface-2: 225 34% 14%;
-    --foreground: 210 40% 98%;
-    --muted: 223 20% 62%;
-    --border: 225 25% 20%;
+    --background: 260 40% 5%;
+    --surface: 258 32% 9%;
+    --surface-2: 256 26% 14%;
+    --foreground: 0 0% 98%;
+    --muted: 252 12% 66%;
+    --border: 258 22% 22%;
 
-    --primary: 258 90% 66%;
+    --primary: 262 83% 63%;
     --primary-foreground: 0 0% 100%;
-    --accent: 190 95% 55%;
+    --accent: 266 80% 68%;
+    --accent-2: 278 74% 62%;
 
-    --success: 152 60% 48%;
-    --warning: 38 92% 55%;
-    --danger: 0 84% 62%;
+    --success: 152 58% 46%;
+    --warning: 34 92% 55%;
+    --danger: 0 78% 60%;
 
-    --radius: 0.9rem;
+    --glass-bg: 258 40% 60%;
+    --radius: 1.25rem;
+
+    /* Pele skeuomórfica — ESCURO (luz vem de cima, sombras profundas) */
+    --skeuo-card-grad: linear-gradient(
+      180deg,
+      hsl(0 0% 100% / 0.06) 0%,
+      hsl(0 0% 100% / 0.02) 22%,
+      hsl(258 45% 4% / 0.35) 100%
+    );
+    --skeuo-card-border: hsl(0 0% 100% / 0.08);
+    --skeuo-card-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.14),
+      inset 0 -2px 4px 0 hsl(260 60% 2% / 0.55),
+      0 2px 4px -1px hsl(260 60% 2% / 0.5),
+      0 16px 38px -12px hsl(260 60% 2% / 0.7),
+      0 28px 56px -24px hsl(262 88% 20% / 0.45);
+
+    --skeuo-input-bg: hsl(256 30% 7% / 0.6);
+    --skeuo-input-border: hsl(0 0% 100% / 0.1);
+    --skeuo-input-shadow:
+      inset 0 2px 5px 0 hsl(260 60% 2% / 0.6),
+      inset 0 1px 1px 0 hsl(260 60% 2% / 0.5),
+      0 1px 0 0 hsl(0 0% 100% / 0.05);
+    --skeuo-input-focus-shadow:
+      inset 0 2px 5px 0 hsl(260 60% 2% / 0.6),
+      0 0 0 3px hsl(var(--primary) / 0.3),
+      0 1px 0 0 hsl(0 0% 100% / 0.05);
+
+    --skeuo-btn-gloss: linear-gradient(180deg, hsl(0 0% 100% / 0.26), hsl(0 0% 100% / 0) 45%);
+    --skeuo-btn-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.4),
+      inset 0 -3px 6px 0 hsl(262 88% 14% / 0.55),
+      0 3px 0 0 hsl(262 70% 30% / 0.9),
+      0 10px 20px -6px hsl(262 88% 20% / 0.6);
+    --skeuo-btn-active-shadow:
+      inset 0 2px 6px 0 hsl(262 88% 10% / 0.6),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.16),
+      0 1px 4px -2px hsl(262 88% 16% / 0.5);
+
+    --skeuo-emboss:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.35),
+      inset 0 -2px 4px 0 hsl(262 88% 12% / 0.55),
+      0 2px 4px -1px hsl(260 60% 2% / 0.5),
+      0 6px 14px -4px hsl(262 88% 20% / 0.5);
+    --skeuo-inset:
+      inset 0 2px 5px 0 hsl(260 60% 2% / 0.5),
+      inset 0 -1px 0 0 hsl(0 0% 100% / 0.05);
+
+    --cf-mesh:
+      radial-gradient(48% 38% at 12% 8%, hsl(var(--primary) / 0.32), transparent 70%),
+      radial-gradient(42% 34% at 92% 14%, hsl(var(--accent) / 0.22), transparent 70%),
+      radial-gradient(55% 45% at 50% 100%, hsl(var(--accent-2) / 0.2), transparent 70%),
+      radial-gradient(80% 60% at 50% 0%, hsl(258 45% 8%), hsl(var(--background)) 70%);
+    --cf-noise-opacity: 0.5;
+    --cf-noise-blend: overlay;
+    --cf-scrollbar-selection: 0.35;
+  }
+
+  /* =====================================================================
+     TEMA CLARO — alternativa (.light). Base branca, preto e roxo.
+     ===================================================================== */
+  .light {
+    --background: 264 40% 98%;
+    --surface: 0 0% 100%;
+    --surface-2: 264 30% 95%;
+    --foreground: 260 30% 10%;
+    --muted: 258 12% 42%;
+    --border: 260 22% 88%;
+
+    --primary: 262 83% 55%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 250 78% 60%;
+    --accent-2: 275 74% 56%;
+
+    --success: 152 58% 40%;
+    --warning: 32 92% 48%;
+    --danger: 0 78% 55%;
+
+    --glass-bg: 262 60% 96%;
+
+    /* Pele skeuomórfica — CLARO (soft UI: bisel branco no topo, sombra suave) */
+    --skeuo-card-grad: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(264 40% 99%) 55%, hsl(264 32% 96%) 100%);
+    --skeuo-card-border: hsl(0 0% 100% / 0.7);
+    --skeuo-card-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.9),
+      inset 0 2px 4px 0 hsl(0 0% 100% / 0.7),
+      inset 0 -2px 3px 0 hsl(260 30% 70% / 0.28),
+      0 1px 2px 0 hsl(260 40% 40% / 0.08),
+      0 10px 24px -10px hsl(262 55% 45% / 0.28),
+      0 24px 48px -22px hsl(262 60% 40% / 0.25);
+
+    --skeuo-input-bg: hsl(var(--surface-2));
+    --skeuo-input-border: hsl(var(--border));
+    --skeuo-input-shadow:
+      inset 0 2px 4px 0 hsl(260 30% 55% / 0.22),
+      inset 0 1px 1px 0 hsl(260 30% 55% / 0.18),
+      0 1px 0 0 hsl(0 0% 100% / 0.8);
+    --skeuo-input-focus-shadow:
+      inset 0 2px 4px 0 hsl(260 30% 55% / 0.2),
+      0 0 0 3px hsl(var(--primary) / 0.2),
+      0 1px 0 0 hsl(0 0% 100% / 0.8);
+
+    --skeuo-btn-gloss: linear-gradient(180deg, hsl(0 0% 100% / 0.35), hsl(0 0% 100% / 0) 45%);
+    --skeuo-btn-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.55),
+      inset 0 -3px 6px 0 hsl(262 88% 30% / 0.4),
+      0 3px 0 0 hsl(262 60% 40%),
+      0 10px 20px -6px hsl(262 80% 45% / 0.5);
+    --skeuo-btn-active-shadow:
+      inset 0 2px 6px 0 hsl(262 88% 25% / 0.5),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.3),
+      0 1px 4px -2px hsl(262 88% 30% / 0.5);
+
+    --skeuo-emboss:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.55),
+      inset 0 -2px 4px 0 hsl(262 88% 30% / 0.35),
+      0 2px 4px -1px hsl(260 40% 40% / 0.2),
+      0 6px 14px -4px hsl(262 70% 45% / 0.4);
+    --skeuo-inset:
+      inset 0 2px 5px 0 hsl(260 30% 55% / 0.25),
+      inset 0 -1px 0 0 hsl(0 0% 100% / 0.7);
+
+    --cf-mesh:
+      radial-gradient(45% 35% at 10% 6%, hsl(var(--primary) / 0.12), transparent 70%),
+      radial-gradient(40% 32% at 94% 12%, hsl(var(--accent) / 0.1), transparent 70%),
+      radial-gradient(55% 45% at 50% 102%, hsl(var(--accent-2) / 0.1), transparent 70%),
+      radial-gradient(90% 70% at 50% -10%, hsl(264 60% 99%), hsl(var(--background)) 65%);
+    --cf-noise-opacity: 0.28;
+    --cf-noise-blend: multiply;
   }
 
   * {
@@ -32,6 +164,32 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  html {
+    color-scheme: dark;
+  }
+  html.light {
+    color-scheme: light;
+  }
+}
+
+/* Atmosfera global: mesh gradient fixo + grão sutil, dependentes do tema. */
+.cf-mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--cf-mesh);
+}
+
+.cf-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--cf-noise-opacity);
+  mix-blend-mode: var(--cf-noise-blend);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
 /* Scrollbar */
@@ -55,41 +213,84 @@
 }
 
 @layer components {
+  /* Painel skeuomórfico: superfície física com bisel superior (luz vinda de
+     cima), volume real com sombra externa e borda que dá espessura. A "pele"
+     (gradiente + sombras + borda) troca conforme o tema via variáveis. */
+  .cf-glass {
+    @apply relative rounded-3xl border;
+    border-color: var(--skeuo-card-border);
+    background-image: var(--skeuo-card-grad);
+    box-shadow: var(--skeuo-card-shadow);
+  }
+
   .cf-card {
-    @apply rounded-2xl border border-border bg-surface/70 backdrop-blur-sm;
+    @apply cf-glass p-5;
   }
+
+  /* Campo "esculpido": afundado na superfície. */
   .cf-input {
-    @apply w-full rounded-xl border border-border bg-background/60 px-10 py-3 text-foreground
-      placeholder:text-muted focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors;
+    @apply w-full rounded-2xl border px-10 py-3 text-foreground placeholder:text-muted transition-all
+      focus:border-primary/60 focus:outline-none;
+    border-color: var(--skeuo-input-border);
+    background-color: var(--skeuo-input-bg);
+    box-shadow: var(--skeuo-input-shadow);
   }
+  .cf-input:focus {
+    box-shadow: var(--skeuo-input-focus-shadow);
+  }
+
+  /* Botão tátil: verniz superior, bisel iluminado e sombra de apoio. Afunda
+     no :active como uma tecla física. */
   .cf-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-medium text-primary-foreground
-      transition-all hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-4 py-3
+      font-heading font-semibold text-primary-foreground transition-all duration-150
+      focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
+    background-image: var(--skeuo-btn-gloss), linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)));
+    box-shadow: var(--skeuo-btn-shadow);
+  }
+  .cf-btn-primary:hover {
+    @apply brightness-110;
+  }
+  .cf-btn-primary:active {
+    transform: translateY(3px);
+    box-shadow: var(--skeuo-btn-active-shadow);
   }
 }
 
 @layer utilities {
+  .font-heading {
+    font-family: var(--font-heading), var(--font-geist-sans), system-ui, sans-serif;
+  }
   .text-gradient {
     background-image: linear-gradient(
-      to right,
+      100deg,
       hsl(var(--primary)),
-      hsl(var(--accent)),
-      hsl(var(--primary))
+      hsl(var(--accent)) 45%,
+      hsl(var(--accent-2))
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .shadow-neon {
-    box-shadow: 0 0 24px hsl(var(--primary) / 0.25);
+    box-shadow: 0 6px 16px -4px hsl(var(--primary) / 0.4), 0 12px 32px -8px hsl(var(--accent-2) / 0.35);
+  }
+  .cf-glow-ring {
+    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.2), 0 6px 18px -6px hsl(var(--accent) / 0.4);
+  }
+  .cf-emboss {
+    box-shadow: var(--skeuo-emboss);
+  }
+  .cf-inset {
+    box-shadow: var(--skeuo-inset);
   }
   .animate-fade-in {
-    animation: fadeIn 0.4s ease-out;
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(6px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;

@@ -16,6 +16,7 @@ import {
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { useUserProfile } from "@/app/hooks/useUserProfile"
 import { signOut } from "@/app/lib/auth"
+import ThemeToggle from "@/app/components/ThemeToggle"
 
 interface AlunoInfo {
   weight_kg: number | null
@@ -146,6 +147,15 @@ export default function PerfilPage() {
           <p className="mt-1 font-semibold text-foreground">{instrutorNome}</p>
         </section>
       )}
+
+      {/* Aparência / tema */}
+      <section className="flex items-center justify-between rounded-2xl border border-border bg-surface p-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Aparência</p>
+          <p className="mt-1 font-semibold text-foreground">Alternar tema claro / escuro</p>
+        </div>
+        <ThemeToggle />
+      </section>
 
       {/* Acoes */}
       <button
