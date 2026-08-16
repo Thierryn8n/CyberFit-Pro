@@ -17,6 +17,7 @@ export interface PlayerExercicio {
   image_url: string | null
   target: string | null
   equipment: string | null
+  biblioteca_id?: string | null
 }
 
 interface SetState {

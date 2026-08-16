@@ -45,7 +45,23 @@ export async function inserirExercicios(supabase: SB, treinoIds: string[], exerc
   const { error } = await supabase.from("exercicios").insert(full)
   if (!error) return
 
-  // Fallback sem colunas de mídia
+  // Fallback 1: sem colunas de mídia, mas preservando biblioteca_id.
+  // Assim o painel do aluno consegue recuperar GIF/imagem/músculo da biblioteca.
+  const withRef = treinoIds.flatMap((treinoId) =>
+    exercicios.map((e, i) => ({
+      treino_id: treinoId,
+      name: e.name,
+      sets: e.sets,
+      reps: e.reps,
+      order_index: i,
+      biblioteca_id: e.biblioteca_id ?? null,
+    })),
+  )
+  const { error: refError } = await supabase.from("exercicios").insert(withRef)
+  if (!refError) return
+
+  // Fallback 2: apenas colunas básicas garantidas. O nome ainda permite
+  // recuperar a mídia por busca na biblioteca.
   const basic = treinoIds.flatMap((treinoId) =>
     exercicios.map((e, i) => ({
       treino_id: treinoId,

@@ -191,3 +191,58 @@ export async function fetchExercicio(id: string): Promise<ExercicioFull> {
   if (!res.ok) throw new Error("Exercício não encontrado")
   return res.json()
 }
+
+// ---------------------------------------------------------------------------
+// Recuperacao de midia a partir da biblioteca (fallback do painel do aluno)
+// ---------------------------------------------------------------------------
+// Quando um exercicio salvo nao tem gif/imagem no banco (colunas ausentes ou
+// treino gravado sem midia), recuperamos a midia da biblioteca usando o
+// biblioteca_id e, em ultimo caso, o proprio nome do exercicio.
+
+export interface MidiaExercicio {
+  gif: string
+  image: string
+  target: string
+  equipment: string
+  instructions: string
+}
+
+function primeiraInstrucao(ex: ExercicioFull): string {
+  const i = ex.instructions ?? {}
+  const texto = i.en ?? i.es ?? Object.values(i)[0] ?? ""
+  return texto || ""
+}
+
+export async function midiaPorBibliotecaId(id: string): Promise<MidiaExercicio | null> {
+  try {
+    const ex = await fetchExercicio(id)
+    return {
+      gif: ex.gif || "",
+      image: ex.image || "",
+      target: ex.target || "",
+      equipment: ex.equipment || "",
+      instructions: primeiraInstrucao(ex),
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function midiaPorNome(name: string): Promise<MidiaExercicio | null> {
+  const alvo = name.trim().toLowerCase()
+  if (!alvo) return null
+  try {
+    const res = await fetchBiblioteca({ q: name, pageSize: 8 })
+    const match = res.items.find((i) => i.name.trim().toLowerCase() === alvo) ?? res.items[0]
+    if (!match) return null
+    return {
+      gif: match.gif || "",
+      image: match.image || "",
+      target: match.target || "",
+      equipment: match.equipment || "",
+      instructions: "",
+    }
+  } catch {
+    return null
+  }
+}

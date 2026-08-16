@@ -8,7 +8,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { useUserProfile } from "../../../hooks/useUserProfile"
 import ExercicioPlayer, { type PlayerExercicio } from "../../../components/ExercicioPlayer"
 import { dataLocalISO } from "../../../lib/treino"
-import { fetchBiblioteca, mediaUrl } from "../../../lib/biblioteca"
+import { fetchBiblioteca, mediaUrl, midiaPorBibliotecaId, midiaPorNome } from "../../../lib/biblioteca"
 
 export default function SessaoTreino() {
   const { id } = useParams<{ id: string }>()
@@ -53,17 +53,65 @@ export default function SessaoTreino() {
       const { data: treino } = await supabase.from("treinos").select("name").eq("id", id).maybeSingle()
       if (treino?.name) setTreinoNome(treino.name)
 
-      const { data: ex } = await supabase
-        .from("exercicios")
-        .select("id, name, sets, reps, weight, notes, gif_url, image_url, target, equipment")
-        .eq("treino_id", id)
-        .order("order_index", { ascending: true })
+      // SELECT resiliente: se as colunas de midia ainda nao existirem no banco,
+      // faz fallback progressivo para nao perder os exercicios do treino.
+      const COLS_FULL =
+        "id, name, sets, reps, weight, notes, gif_url, image_url, target, equipment, biblioteca_id, order_index"
+      const COLS_REF = "id, name, sets, reps, biblioteca_id, order_index"
+      const COLS_MIN = "id, name, sets, reps, order_index"
 
-      const list = (ex ?? []).map((e: any) => ({
-        ...e,
+      async function selecionar(cols: string) {
+        return supabase
+          .from("exercicios")
+          .select(cols)
+          .eq("treino_id", id)
+          .order("order_index", { ascending: true })
+      }
+
+      let ex: any[] | null = null
+      const r1 = await selecionar(COLS_FULL)
+      if (!r1.error) ex = r1.data as any[]
+      else {
+        const r2 = await selecionar(COLS_REF)
+        if (!r2.error) ex = r2.data as any[]
+        else {
+          const r3 = await selecionar(COLS_MIN)
+          ex = (r3.data as any[]) ?? []
+        }
+      }
+
+      let list = (ex ?? []).map((e: any) => ({
+        id: e.id,
+        name: e.name,
+        sets: e.sets ?? null,
+        reps: e.reps ?? null,
+        weight: e.weight ?? null,
+        notes: e.notes ?? null,
         gif_url: e.gif_url ? mediaUrl(e.gif_url) : null,
         image_url: e.image_url ? mediaUrl(e.image_url) : null,
+        target: e.target ?? null,
+        equipment: e.equipment ?? null,
+        biblioteca_id: e.biblioteca_id ?? null,
       })) as PlayerExercicio[]
+
+      // Enriquecimento: recupera midia/descricao faltante direto da biblioteca,
+      // usando biblioteca_id (preferencial) ou o nome do exercicio.
+      list = await Promise.all(
+        list.map(async (e) => {
+          if (e.gif_url || e.image_url) return e
+          const midia =
+            (e.biblioteca_id ? await midiaPorBibliotecaId(e.biblioteca_id) : null) ?? (await midiaPorNome(e.name))
+          if (!midia) return e
+          return {
+            ...e,
+            gif_url: midia.gif || null,
+            image_url: midia.image || null,
+            target: e.target || midia.target || null,
+            equipment: e.equipment || midia.equipment || null,
+            notes: e.notes || midia.instructions || null,
+          }
+        }),
+      )
       setExercicios(list)
 
       // Marca exercicios ja concluidos hoje (todas as series registradas)
