@@ -85,7 +85,7 @@ export default function AlunoHome() {
         </div>
         <Link
           href="/aluno/perfil"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold text-primary-foreground shadow-neon"
+          className="cf-emboss flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold text-primary-foreground"
           style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
           aria-label="Perfil"
         >
@@ -100,23 +100,28 @@ export default function AlunoHome() {
       )}
 
       {/* Faixa de dias da semana */}
-      <div className="mt-6 flex justify-between gap-1">
+      <div className="cf-inset mt-6 flex justify-between gap-1.5 rounded-3xl border border-white/5 bg-black/20 p-2">
         {DIAS_SEMANA.map((d, i) => {
           const isToday = i === hoje
           const tem = diasComTreino.has(i)
           return (
             <div
               key={i}
-              className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-2xl border text-xs backdrop-blur-sm transition-colors ${
+              className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-xs transition-all ${
                 isToday
-                  ? "border-primary/60 bg-primary/20 text-primary shadow-neon"
-                  : "border-white/10 bg-white/[0.03] text-muted"
+                  ? "cf-emboss text-primary-foreground"
+                  : "text-muted"
               }`}
+              style={
+                isToday
+                  ? { backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }
+                  : undefined
+              }
             >
               <span className="font-medium">{d.short}</span>
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                  tem ? (isToday ? "bg-primary" : "bg-accent") : "bg-transparent"
+                  tem ? (isToday ? "bg-white" : "bg-accent") : "bg-transparent"
                 }`}
                 aria-hidden
               />
@@ -137,7 +142,7 @@ export default function AlunoHome() {
               <Link
                 key={t.id}
                 href={`/aluno/treino/${t.id}`}
-                className="group relative overflow-hidden rounded-3xl p-5 text-primary-foreground shadow-neon"
+                className="cf-emboss group relative overflow-hidden rounded-3xl p-5 text-primary-foreground transition-all hover:brightness-110 active:translate-y-0.5"
                 style={{ backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
               >
                 <div className="relative z-10">

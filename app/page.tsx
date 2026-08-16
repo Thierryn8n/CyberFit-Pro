@@ -25,7 +25,7 @@ export default function HomePage() {
       <header className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
         <div className="flex items-center gap-2.5">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl shadow-neon"
+            className="cf-emboss flex h-9 w-9 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
           >
             <Barbell size={22} weight="duotone" className="text-primary-foreground" />
@@ -71,7 +71,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <div key={f.title} className="cf-card">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-accent-2/25 text-primary">
+              <div className="cf-emboss flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/30 to-accent-2/30 text-primary">
                 <f.icon size={22} weight="duotone" />
               </div>
               <h3 className="mt-4 font-heading text-lg font-medium">{f.title}</h3>

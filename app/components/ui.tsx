@@ -37,10 +37,10 @@ export function StatCard({
   accent?: "primary" | "accent" | "success" | "warning"
 }) {
   const accentMap = {
-    primary: "bg-primary/20 text-primary shadow-neon",
-    accent: "bg-accent/20 text-accent cf-glow-ring",
-    success: "bg-success/20 text-success",
-    warning: "bg-warning/20 text-warning",
+    primary: "bg-primary/25 text-primary cf-emboss",
+    accent: "bg-accent/25 text-accent cf-emboss",
+    success: "bg-success/25 text-success cf-emboss",
+    warning: "bg-warning/25 text-warning cf-emboss",
   }
   return (
     <div className="cf-card group overflow-hidden">
@@ -76,7 +76,7 @@ export function EmptyState({
 }) {
   return (
     <div className="cf-card flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-accent-2/25 text-primary">
+      <div className="cf-emboss flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/30 to-accent-2/30 text-primary">
         <IconCmp size={28} weight="duotone" />
       </div>
       <h3 className="mt-4 font-heading text-lg font-medium text-foreground">{title}</h3>

@@ -87,7 +87,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-6">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-2xl shadow-neon"
+          className="cf-emboss flex h-10 w-10 items-center justify-center rounded-2xl"
           style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
         >
           <Barbell size={22} weight="duotone" className="text-primary-foreground" />
@@ -104,8 +104,8 @@ export default function Sidebar() {
 
       {/* Perfil do usuário */}
       <div className="px-4 pb-4">
-        <div className="cf-glass flex items-center gap-3 p-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-accent-2/30">
+        <div className="cf-inset flex items-center gap-3 rounded-2xl border border-white/5 bg-black/20 p-3">
+          <div className="cf-emboss flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/40 to-accent-2/40">
             <UserCircle size={24} weight="fill" className="text-primary" />
           </div>
           <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ export default function Sidebar() {
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all",
                 active
-                  ? "text-primary-foreground shadow-neon"
+                  ? "cf-emboss text-primary-foreground"
                   : "text-muted hover:bg-white/5 hover:text-foreground",
               )}
               style={

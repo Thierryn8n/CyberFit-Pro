@@ -82,31 +82,73 @@
 }
 
 @layer components {
-  /* Painel de vidro base: blur pronunciado + saturação + realce superior
-     que simula luz refratando na borda do vidro. */
+  /* Painel skeuomórfico + vidro: superfície física com bisel superior
+     (luz vinda de cima), volume real com sombra externa profunda e uma
+     borda inferior sombreada que dá espessura à peça, como um objeto
+     esculpido pousado sobre a mesa. */
   .cf-glass {
-    @apply relative rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150;
+    @apply relative rounded-3xl border border-white/10 backdrop-blur-2xl backdrop-saturate-150;
+    background-image:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.09) 0%, hsl(0 0% 100% / 0.02) 22%, hsl(258 40% 8% / 0.28) 100%);
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
-      inset 0 0 0 1px hsl(0 0% 100% / 0.02),
-      0 24px 48px -16px hsl(260 60% 4% / 0.65);
+      /* bisel superior iluminado */
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.22),
+      inset 0 2px 6px 0 hsl(0 0% 100% / 0.08),
+      /* espessura / borda inferior escura */
+      inset 0 -2px 4px 0 hsl(260 60% 2% / 0.55),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.03),
+      /* contato / sombra projetada, volumétrica */
+      0 2px 4px -1px hsl(260 60% 2% / 0.5),
+      0 18px 40px -12px hsl(260 60% 2% / 0.7),
+      0 30px 60px -24px hsl(262 88% 20% / 0.5);
   }
 
   .cf-card {
     @apply cf-glass p-5;
   }
 
+  /* Campo "esculpido": parece afundado na superfície, com sombra interna
+     no topo e um brilho fino embaixo simulando a borda embutida. */
   .cf-input {
-    @apply w-full rounded-2xl border border-white/10 bg-white/[0.03] px-10 py-3 text-foreground
+    @apply w-full rounded-2xl border border-black/40 bg-black/25 px-10 py-3 text-foreground
       placeholder:text-muted backdrop-blur-sm transition-all
-      focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/25;
+      focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/25;
+    box-shadow:
+      inset 0 2px 5px 0 hsl(260 60% 2% / 0.6),
+      inset 0 1px 1px 0 hsl(260 60% 2% / 0.5),
+      0 1px 0 0 hsl(0 0% 100% / 0.06);
+  }
+  .cf-input:focus {
+    box-shadow:
+      inset 0 2px 5px 0 hsl(260 60% 2% / 0.6),
+      0 0 0 3px hsl(var(--primary) / 0.25),
+      0 1px 0 0 hsl(0 0% 100% / 0.06);
   }
 
+  /* Botão tátil: verniz superior brilhante, bisel iluminado e sombra de
+     apoio. Afunda de verdade no :active, como uma tecla física. */
   .cf-btn-primary {
     @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-4 py-3
-      font-heading font-semibold text-primary-foreground transition-all
-      hover:brightness-110 hover:shadow-neon focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
-    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)));
+      font-heading font-semibold text-primary-foreground transition-all duration-150
+      focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
+    background-image:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.28), hsl(0 0% 100% / 0) 45%),
+      linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)));
+    box-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.45),
+      inset 0 -3px 6px 0 hsl(262 88% 20% / 0.55),
+      0 3px 0 0 hsl(262 70% 34% / 0.9),
+      0 8px 18px -4px hsl(262 88% 30% / 0.6);
+  }
+  .cf-btn-primary:hover {
+    @apply brightness-110;
+  }
+  .cf-btn-primary:active {
+    transform: translateY(3px);
+    box-shadow:
+      inset 0 2px 6px 0 hsl(262 88% 12% / 0.6),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.2),
+      0 1px 4px -2px hsl(262 88% 20% / 0.5);
   }
 }
 
@@ -131,6 +173,22 @@
   }
   .cf-glow-ring {
     box-shadow: 0 0 0 1px hsl(var(--accent) / 0.25), 0 0 24px hsl(var(--accent) / 0.2);
+  }
+  /* Plaqueta em relevo: badge físico com verniz no topo, bisel iluminado
+     e sombra de apoio — usado nas plaquinhas de ícone por todo o app. */
+  .cf-emboss {
+    box-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.4),
+      inset 0 -2px 4px 0 hsl(262 88% 18% / 0.55),
+      0 2px 4px -1px hsl(260 60% 2% / 0.5),
+      0 6px 14px -4px hsl(262 88% 30% / 0.5);
+  }
+  /* Superfície pressionada: parece afundada, boa para trilhos e áreas
+     inativas que recebem elementos em relevo por cima. */
+  .cf-inset {
+    box-shadow:
+      inset 0 2px 5px 0 hsl(260 60% 2% / 0.5),
+      inset 0 -1px 0 0 hsl(0 0% 100% / 0.05);
   }
   .animate-fade-in {
     animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
