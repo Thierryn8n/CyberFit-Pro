@@ -1,10 +1,31 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { X, CheckCircle, Circle, CaretRight, ClockCounterClockwise, Info } from "@phosphor-icons/react"
+import {
+  X,
+  CheckCircle,
+  Circle,
+  CaretRight,
+  ClockCounterClockwise,
+  Info,
+  CaretDown,
+  SpinnerGap,
+  ListNumbers,
+  NotePencil,
+} from "@phosphor-icons/react"
 
 import { createClient } from "@/lib/supabase/client"
 import { dataLocalISO, calcularVolume, fmtCarga } from "../lib/treino"
+import {
+  fetchExercicio,
+  fetchExercicioPorNome,
+  resolverInstrucao,
+  catLabel,
+  equipLabel,
+  muscleLabel,
+  idiomaLabel,
+  type ExercicioFull,
+} from "../lib/biblioteca"
 
 export interface PlayerExercicio {
   id: string
@@ -18,6 +39,8 @@ export interface PlayerExercicio {
   target: string | null
   equipment: string | null
   biblioteca_id?: string | null
+  /** Detalhe completo da biblioteca (quando ja carregado na tela de lista). */
+  full?: ExercicioFull | null
 }
 
 interface SetState {
@@ -55,7 +78,42 @@ export default function ExercicioPlayer({
   )
   const [last, setLast] = useState<Record<number, { reps: number | null; weight: number | null }>>({})
   const [showInfo, setShowInfo] = useState(false)
+  const [detail, setDetail] = useState<ExercicioFull | null>(exercicio.full ?? null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailTentado, setDetailTentado] = useState(Boolean(exercicio.full))
   const media = exercicio.gif_url || exercicio.image_url || ""
+
+  // Ao abrir "Ver mais", busca o detalhe completo da biblioteca (grupo, alvo,
+  // musculos secundarios e passo a passo) caso ainda nao tenha sido carregado.
+  useEffect(() => {
+    if (!showInfo || detail || detailTentado || detailLoading) return
+    let active = true
+    setDetailLoading(true)
+    async function carregar() {
+      let d: ExercicioFull | null = null
+      if (exercicio.biblioteca_id) {
+        d = await fetchExercicio(exercicio.biblioteca_id).catch(() => null)
+      }
+      if (!d) d = await fetchExercicioPorNome(exercicio.name)
+      if (!active) return
+      setDetail(d)
+      setDetailLoading(false)
+      setDetailTentado(true)
+    }
+    carregar()
+    return () => {
+      active = false
+    }
+  }, [showInfo, detail, detailTentado, detailLoading, exercicio.biblioteca_id, exercicio.name])
+
+  // Reset ao trocar de exercicio (o player e reutilizado entre exercicios).
+  useEffect(() => {
+    setDetail(exercicio.full ?? null)
+    setDetailTentado(Boolean(exercicio.full))
+    setShowInfo(false)
+  }, [exercicio.id, exercicio.full])
+
+  const instrucao = useMemo(() => (detail ? resolverInstrucao(detail) : null), [detail])
 
   // Carrega series ja registradas hoje + a ultima sessao anterior (comparativo)
   useEffect(() => {
@@ -192,31 +250,116 @@ export default function ExercicioPlayer({
 
         {/* Titulo e tags */}
         <div className="px-5 pt-4">
-          <h1 className="text-xl font-bold text-foreground text-balance">{exercicio.name}</h1>
+          <h1 className="text-xl font-bold text-foreground text-balance">{detail?.name || exercicio.name}</h1>
           <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            {exercicio.target && (
-              <span className="rounded-full bg-primary/15 px-2.5 py-1 text-primary">{exercicio.target}</span>
+            {(detail?.target || exercicio.target) && (
+              <span className="rounded-full bg-primary/15 px-2.5 py-1 text-primary">
+                {muscleLabel(detail?.target || exercicio.target || "")}
+              </span>
             )}
-            {exercicio.equipment && (
-              <span className="rounded-full bg-surface px-2.5 py-1 text-muted">{exercicio.equipment}</span>
+            {(detail?.equipment || exercicio.equipment) && (
+              <span className="rounded-full bg-surface px-2.5 py-1 text-muted">
+                {equipLabel(detail?.equipment || exercicio.equipment || "")}
+              </span>
             )}
             <span className="rounded-full bg-surface px-2.5 py-1 text-muted">
               Meta: {nSets} x {exercicio.reps || "–"}
             </span>
           </div>
 
-          {(exercicio.notes || exercicio.gif_url) && (
-            <button
-              onClick={() => setShowInfo((v) => !v)}
-              className="mt-3 flex items-center gap-1.5 text-sm font-medium text-accent"
-            >
-              <Info size={16} /> {showInfo ? "Ocultar instruções" : "Como executar"}
-            </button>
-          )}
-          {showInfo && exercicio.notes && (
-            <p className="mt-2 whitespace-pre-line rounded-xl bg-surface p-3 text-sm leading-relaxed text-muted">
-              {exercicio.notes}
-            </p>
+          <button
+            onClick={() => setShowInfo((v) => !v)}
+            aria-expanded={showInfo}
+            className="mt-3 flex w-full items-center justify-between gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-medium text-accent"
+          >
+            <span className="flex items-center gap-1.5">
+              <Info size={16} /> {showInfo ? "Ver menos" : "Ver mais sobre o exercício"}
+            </span>
+            <CaretDown size={16} className={`transition-transform ${showInfo ? "rotate-180" : ""}`} />
+          </button>
+
+          {showInfo && (
+            <div className="mt-3 flex flex-col gap-4">
+              {/* Observacao personalizada do instrutor */}
+              {exercicio.notes && (
+                <div className="rounded-xl border border-accent/30 bg-accent/10 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-accent">
+                    <NotePencil size={14} weight="fill" /> Observação do instrutor
+                  </p>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{exercicio.notes}</p>
+                </div>
+              )}
+
+              {detailLoading && !detail && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-surface py-6 text-sm text-muted">
+                  <SpinnerGap size={18} className="animate-spin" /> Carregando detalhes...
+                </div>
+              )}
+
+              {detail && (
+                <>
+                  {/* Ficha do exercicio */}
+                  <div className="rounded-xl bg-surface p-3">
+                    <div className="flex flex-col gap-2 text-sm">
+                      <FichaLinha label="Grupo muscular" value={catLabel(detail.category)} />
+                      <FichaLinha label="Equipamento" value={equipLabel(detail.equipment)} />
+                      {detail.target && <FichaLinha label="Músculo alvo" value={muscleLabel(detail.target)} />}
+                    </div>
+                    {detail.secondary_muscles.length > 0 && (
+                      <div className="mt-3 border-t border-border pt-3">
+                        <p className="mb-1.5 text-xs text-muted">Músculos secundários</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {detail.secondary_muscles.map((m) => (
+                            <span key={m} className="rounded-full bg-surface-2 px-2.5 py-1 text-xs text-foreground/80">
+                              {muscleLabel(m)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Passo a passo */}
+                  <div className="rounded-xl bg-surface p-3">
+                    <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                      <ListNumbers size={14} weight="bold" /> Como executar
+                    </p>
+                    {instrucao && instrucao.steps.length > 0 ? (
+                      <ol className="flex flex-col gap-2">
+                        {instrucao.steps.map((s, i) => (
+                          <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-foreground/90">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
+                              {i + 1}
+                            </span>
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : instrucao && instrucao.text ? (
+                      <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{instrucao.text}</p>
+                    ) : (
+                      <p className="text-sm text-muted">Sem instruções disponíveis para este exercício.</p>
+                    )}
+
+                    {/* Aviso quando a traducao pt-BR ainda nao esta disponivel */}
+                    {instrucao && instrucao.lang && instrucao.lang !== "pt" && (instrucao.steps.length > 0 || instrucao.text) && (
+                      <p className="mt-3 border-t border-border pt-2 text-[11px] text-muted">
+                        Tradução em português em processamento — exibindo em {idiomaLabel(instrucao.lang)}.
+                      </p>
+                    )}
+                    {detail.attribution && (
+                      <p className="mt-2 text-[11px] text-muted">{detail.attribution}</p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {!detailLoading && !detail && !exercicio.notes && (
+                <p className="rounded-xl bg-surface p-3 text-sm text-muted">
+                  Não foi possível carregar mais detalhes deste exercício.
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -300,6 +443,15 @@ export default function ExercicioPlayer({
           )}
         </button>
       </div>
+    </div>
+  )
+}
+
+function FichaLinha({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
     </div>
   )
 }
