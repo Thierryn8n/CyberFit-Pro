@@ -11,7 +11,7 @@ import pg from "pg"
 export const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 export const MODEL = "meta/llama-3.1-8b-instruct"
 export const BATCH = 25
-export const BATCH_INSTR = 5
+export const BATCH_INSTR = 3
 
 const SYSTEM = `Voce e um tradutor especialista em musculacao e fitness do Brasil.
 Traduza cada nome de exercicio do ingles para o portugues do Brasil usando a
@@ -100,6 +100,46 @@ export function extrairJson(texto: string) {
   const fim = semCerca.lastIndexOf("}")
   if (inicio === -1 || fim === -1) throw new Error("Sem JSON na resposta")
   return JSON.parse(semCerca.slice(inicio, fim + 1))
+}
+
+// Parser tolerante para a resposta de instrucoes: quando o modelo trunca a
+// resposta (instrucoes longas + varios itens no lote), o JSON fecha errado.
+// Em vez de descartar o lote inteiro, extrai cada objeto `{"i":N,...}`
+// individualmente e ignora apenas o ultimo, se estiver incompleto.
+export function extrairJsonInstrucoes(texto: string): { items: { i: number; text?: string; steps?: string[] }[] } {
+  try {
+    return extrairJson(texto)
+  } catch {
+    // ignora e tenta o reparo abaixo
+  }
+
+  const semCerca = texto.replace(/```json/gi, "").replace(/```/g, "").trim()
+  const items: { i: number; text?: string; steps?: string[] }[] = []
+  // Localiza cada bloco "i":N,... ate a proxima ocorrencia de "i":N ou o fim.
+  const re = /\{\s*"i"\s*:\s*(\d+)\s*,/g
+  const starts: number[] = []
+  let m: RegExpExecArray | null
+  while ((m = re.exec(semCerca))) starts.push(m.index)
+
+  for (let k = 0; k < starts.length; k++) {
+    const from = starts[k]
+    const to = k + 1 < starts.length ? starts[k + 1] : semCerca.length
+    let bloco = semCerca.slice(from, to).replace(/,\s*$/, "")
+    // Garante que o bloco fecha corretamente; se nao fechar, e o ultimo
+    // item truncado - descarta.
+    const abre = (bloco.match(/\{/g) ?? []).length
+    const fecha = (bloco.match(/\}/g) ?? []).length
+    if (abre !== fecha) continue
+    try {
+      const obj = JSON.parse(bloco)
+      if (typeof obj.i === "number") items.push(obj)
+    } catch {
+      // bloco corrompido - ignora so este item
+    }
+  }
+
+  if (items.length === 0) throw new Error("Sem JSON na resposta")
+  return { items }
 }
 
 // Escolhe a melhor fonte de traducao (ingles de preferencia) a partir dos
@@ -198,7 +238,7 @@ export async function traduzirInstrucoesLote(items: InstrucaoPendente[]) {
     body: JSON.stringify({
       model: MODEL,
       temperature: 0.2,
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
         { role: "system", content: SYSTEM_INSTR },
         { role: "user", content: JSON.stringify(payload) },
@@ -213,7 +253,7 @@ export async function traduzirInstrucoesLote(items: InstrucaoPendente[]) {
 
   const data = await res.json()
   const text: string = data.choices?.[0]?.message?.content ?? "{}"
-  const parsed = extrairJson(text)
+  const parsed = extrairJsonInstrucoes(text)
   const arr = parsed.items ?? []
   const map = new Map<number, { text: string; steps: string[] }>()
   for (const row of arr) {
@@ -307,8 +347,23 @@ export async function traduzirInstrucoesPendentes(client: pg.Client, limit: numb
     try {
       results = await traduzirInstrucoesLote(chunk)
     } catch {
-      await new Promise((r) => setTimeout(r, 1500))
-      results = await traduzirInstrucoesLote(chunk)
+      // Retry 1: mesmo lote apos uma pausa (pode ter sido rate limit).
+      try {
+        await new Promise((r) => setTimeout(r, 1500))
+        results = await traduzirInstrucoesLote(chunk)
+      } catch {
+        // Retry 2: cai para traducao item-a-item - lotes menores tem bem
+        // menos chance de o modelo truncar o JSON no meio.
+        results = []
+        for (const item of chunk) {
+          try {
+            const [r] = await traduzirInstrucoesLote([item])
+            results.push(r)
+          } catch {
+            results.push({ id: item.id, text: null, steps: null })
+          }
+        }
+      }
     }
     await client.query("begin")
     for (const r of results) {
