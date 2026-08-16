@@ -12,23 +12,41 @@ export const maxDuration = 300
 // repetidamente ate "remaining" chegar a zero.
 
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-const MODEL = "meta/llama-3.3-70b-instruct"
-const BATCH = 30
+const MODEL = "meta/llama-3.1-8b-instruct"
+const BATCH = 25
 const SECRET = "cyberfit-traduzir-2026"
 
 const SYSTEM = `Voce e um tradutor especialista em musculacao e fitness do Brasil.
 Traduza cada nome de exercicio do ingles para o portugues do Brasil usando a
-terminologia REAL usada nas academias brasileiras. Exemplos de estilo:
+terminologia REAL usada nas academias brasileiras.
+
+GLOSSARIO OBRIGATORIO (use exatamente estes termos):
+- squat -> agachamento | front squat -> agachamento frontal | back squat -> agachamento
+- deadlift -> levantamento terra | romanian deadlift / RDL -> stiff
+- bench press -> supino | incline -> inclinado | decline -> declinado
+- press (ombro) -> desenvolvimento | overhead press -> desenvolvimento
+- row -> remada | bent over -> curvado | pulldown -> puxada | pull-up -> barra fixa
+- curl -> rosca | biceps curl -> rosca de biceps | hammer curl -> rosca martelo
+- triceps extension -> extensao de triceps | pushdown -> triceps na polia
+- lateral raise -> elevacao lateral | front raise -> elevacao frontal
+- lunge -> afundo | calf raise -> panturrilha | leg curl -> mesa flexora
+- leg extension -> cadeira extensora | hip thrust -> elevacao pelvica
+- fly / flye -> crucifixo | dip -> paralelas/mergulho | shrug -> encolhimento
+- clean -> clean (levantamento olimpico, NUNCA "limpeza")
+- clean and press -> clean and press | snatch -> arranco | crunch -> abdominal
+- barbell -> com barra | dumbbell -> com halteres | cable -> na polia/cabo
+- machine -> na maquina | smith machine -> no smith | kettlebell -> com kettlebell
+- assisted -> assistido | prone -> em pronacao/deitado de bruços | supine -> deitado
+
+Exemplos:
 - "Barbell Bench Press" -> "Supino reto com barra"
 - "Incline Dumbbell Press" -> "Supino inclinado com halteres"
-- "Romanian Deadlift" -> "Stiff (levantamento terra romeno)"
-- "Barbell Curl" -> "Rosca direta com barra"
-- "Lat Pulldown" -> "Puxada na frente (pulldown)"
-- "Leg Press" -> "Leg press"
-- "Triceps Pushdown" -> "Triceps na polia (pushdown)"
-- "Dumbbell Lateral Raise" -> "Elevacao lateral com halteres"
+- "Barbell Bench Front Squat" -> "Agachamento frontal com barra"
+- "Barbell Clean and Press" -> "Clean and press com barra"
+- "Lat Pulldown" -> "Puxada na frente"
+
 Regras:
-- Mantenha nomes de equipamentos e termos consagrados (leg press, crossover, drag curl).
+- Mantenha termos consagrados que academias brasileiras usam em ingles (leg press, crossover, drag curl, clean, snatch).
 - Seja conciso e natural, como um professor de academia escreveria.
 - NAO invente exercicios; apenas traduza.
 - Responda APENAS com um JSON valido no formato {"items":[{"i":0,"pt":"..."}]}.`
