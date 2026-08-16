@@ -71,6 +71,7 @@ function rowToFull(r: BibliotecaRow): ExercicioFull {
     instructions,
     instruction_steps,
     attribution: r.attribution ?? "© Gym visual — https://gymvisual.com/",
+    name_translated: Boolean(r.name_pt?.trim()),
   }
 }
 
@@ -96,6 +97,7 @@ export function toFull(ex: RawExercise): ExercicioFull {
     instructions: ex.instructions ?? {},
     instruction_steps: ex.instruction_steps ?? {},
     attribution: ex.attribution ?? "© Gym visual — https://gymvisual.com/",
+    name_translated: false,
   }
 }
 
