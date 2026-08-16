@@ -79,13 +79,14 @@ export default function AlunoHome() {
           <p className="text-sm text-muted">
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
           </p>
-          <h1 className="mt-0.5 text-2xl font-bold text-foreground text-balance">
+          <h1 className="mt-0.5 font-heading text-2xl font-bold text-foreground text-balance">
             Olá, {profile?.full_name?.split(" ")[0] ?? "Aluno"}
           </h1>
         </div>
         <Link
           href="/aluno/perfil"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 text-lg font-bold text-primary"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold text-primary-foreground shadow-neon"
+          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
           aria-label="Perfil"
         >
           {(profile?.full_name ?? "A").charAt(0).toUpperCase()}
@@ -106,10 +107,10 @@ export default function AlunoHome() {
           return (
             <div
               key={i}
-              className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-2xl border text-xs transition-colors ${
+              className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-2xl border text-xs backdrop-blur-sm transition-colors ${
                 isToday
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-border bg-surface text-muted"
+                  ? "border-primary/60 bg-primary/20 text-primary shadow-neon"
+                  : "border-white/10 bg-white/[0.03] text-muted"
               }`}
             >
               <span className="font-medium">{d.short}</span>
@@ -129,20 +130,21 @@ export default function AlunoHome() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Treino de hoje</h2>
 
         {busy ? (
-          <div className="h-40 animate-pulse rounded-3xl bg-surface" />
+          <div className="h-40 animate-pulse rounded-3xl bg-white/[0.03]" />
         ) : treinosHoje.length > 0 ? (
           <div className="flex flex-col gap-3">
             {treinosHoje.map((t) => (
               <Link
                 key={t.id}
                 href={`/aluno/treino/${t.id}`}
-                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-5 text-primary-foreground shadow-lg shadow-primary/25"
+                className="group relative overflow-hidden rounded-3xl p-5 text-primary-foreground shadow-neon"
+                style={{ backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
               >
                 <div className="relative z-10">
                   <p className="text-xs font-medium uppercase tracking-wide opacity-80">Pronto para treinar</p>
-                  <h3 className="mt-1 text-2xl font-bold text-balance">{t.name}</h3>
+                  <h3 className="mt-1 font-heading text-2xl font-bold text-balance">{t.name}</h3>
                   <p className="mt-1 text-sm opacity-90">{t.exCount} exercícios</p>
-                  <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-black/20 px-4 py-2 text-sm font-semibold">
+                  <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-black/25 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
                     Iniciar treino <CaretRight size={16} weight="bold" />
                   </span>
                 </div>
@@ -156,7 +158,7 @@ export default function AlunoHome() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 rounded-3xl border border-border bg-surface p-8 text-center">
+          <div className="cf-glass flex flex-col items-center gap-2 p-8 text-center">
             <Moon size={40} className="text-muted" weight="duotone" />
             <p className="font-medium text-foreground">Dia de descanso</p>
             <p className="text-sm text-muted">Nenhum treino marcado para hoje. Aproveite para recuperar.</p>
@@ -168,14 +170,14 @@ export default function AlunoHome() {
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Sua semana</h2>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-border bg-surface p-4">
+          <div className="cf-glass p-4">
             <CheckCircle size={22} className="text-success" weight="fill" />
-            <p className="mt-2 text-2xl font-bold text-foreground">{busy ? "–" : weekSessions}</p>
+            <p className="mt-2 font-heading text-2xl font-bold text-foreground">{busy ? "–" : weekSessions}</p>
             <p className="text-xs text-muted">dias treinados</p>
           </div>
-          <div className="rounded-2xl border border-border bg-surface p-4">
+          <div className="cf-glass p-4">
             <Fire size={22} className="text-warning" weight="fill" />
-            <p className="mt-2 text-2xl font-bold text-foreground">{busy ? "–" : fmtVolume(weekVolume)}</p>
+            <p className="mt-2 font-heading text-2xl font-bold text-foreground">{busy ? "–" : fmtVolume(weekVolume)}</p>
             <p className="text-xs text-muted">volume total</p>
           </div>
         </div>
@@ -184,7 +186,7 @@ export default function AlunoHome() {
       {/* Atalho para todos os treinos */}
       <Link
         href="/aluno/treinos"
-        className="mt-6 flex items-center justify-between rounded-2xl border border-border bg-surface p-4 text-sm font-medium text-foreground"
+        className="cf-glass mt-6 flex items-center justify-between p-4 text-sm font-medium text-foreground"
       >
         <span className="flex items-center gap-2">
           <Barbell size={20} className="text-primary" /> Ver todos os treinos da semana

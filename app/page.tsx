@@ -21,18 +21,16 @@ const FEATURES = [
 export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(125% 125% at 50% 0%, transparent 45%, hsl(258 90% 66% / 0.16) 100%)" }}
-      />
-
       {/* Nav */}
       <header className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-            <Barbell size={22} weight="duotone" className="text-primary" />
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-xl shadow-neon"
+            style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
+          >
+            <Barbell size={22} weight="duotone" className="text-primary-foreground" />
           </div>
-          <span className="text-lg font-semibold">CyberFit Pro</span>
+          <span className="font-heading text-lg font-semibold">CyberFit Pro</span>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/login" className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:text-foreground">
@@ -46,10 +44,10 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative mx-auto max-w-6xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24">
-        <span className="inline-flex items-center rounded-full border border-border bg-surface/60 px-3 py-1 text-xs font-medium text-muted">
+        <span className="cf-glass inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-muted">
           Plataforma de gestão para academias
         </span>
-        <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold leading-tight text-balance sm:text-5xl md:text-6xl">
+        <h1 className="mx-auto mt-6 max-w-3xl font-heading text-4xl font-semibold leading-tight text-balance sm:text-5xl md:text-6xl">
           Sua academia <span className="text-gradient">inteira</span> em um só lugar
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted text-pretty sm:text-lg">
@@ -61,7 +59,7 @@ export default function HomePage() {
           </Link>
           <Link
             href="/login"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 font-medium text-foreground transition-colors hover:bg-surface-2 sm:w-auto"
+            className="cf-glass inline-flex w-full items-center justify-center gap-2 px-4 py-3 font-medium text-foreground transition-colors hover:bg-white/10 sm:w-auto"
           >
             Já tenho conta
           </Link>
@@ -72,11 +70,11 @@ export default function HomePage() {
       <section className="relative mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <div key={f.title} className="cf-card p-6">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <div key={f.title} className="cf-card">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-accent-2/25 text-primary">
                 <f.icon size={22} weight="duotone" />
               </div>
-              <h3 className="mt-4 text-lg font-medium">{f.title}</h3>
+              <h3 className="mt-4 font-heading text-lg font-medium">{f.title}</h3>
               <p className="mt-1 text-sm text-muted text-pretty">{f.desc}</p>
             </div>
           ))}

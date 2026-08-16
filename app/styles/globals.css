@@ -4,23 +4,25 @@
 
 @layer base {
   :root {
-    /* Paleta CyberFit: fundo escuro azulado + roxo neon + ciano de apoio */
-    --background: 222 47% 6%;
-    --surface: 224 39% 10%;
-    --surface-2: 225 34% 14%;
+    /* CyberFit — base violeta profunda com brilhos ciano e magenta */
+    --background: 260 48% 4%;
+    --surface: 258 38% 8%;
+    --surface-2: 256 32% 13%;
     --foreground: 210 40% 98%;
-    --muted: 223 20% 62%;
-    --border: 225 25% 20%;
+    --muted: 250 16% 68%;
+    --border: 258 28% 24%;
 
-    --primary: 258 90% 66%;
+    --primary: 262 88% 64%;
     --primary-foreground: 0 0% 100%;
     --accent: 190 95% 55%;
+    --accent-2: 322 88% 62%;
 
     --success: 152 60% 48%;
     --warning: 38 92% 55%;
     --danger: 0 84% 62%;
 
-    --radius: 0.9rem;
+    --glass-bg: 258 40% 60%;
+    --radius: 1.25rem;
   }
 
   * {
@@ -32,6 +34,31 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Atmosfera global: mesh gradient multi-cor fixo + grão sutil.
+   Fica no body para que toda a app herde a mesma profundidade sem
+   precisar decorar cada página individualmente. */
+.cf-mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(48% 38% at 12% 8%, hsl(var(--primary) / 0.38), transparent 70%),
+    radial-gradient(42% 34% at 92% 14%, hsl(var(--accent) / 0.28), transparent 70%),
+    radial-gradient(55% 45% at 50% 100%, hsl(var(--accent-2) / 0.22), transparent 70%),
+    radial-gradient(80% 60% at 50% 0%, hsl(258 45% 10%), hsl(var(--background)) 70%);
+}
+
+.cf-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
 }
 
 /* Scrollbar */
@@ -55,41 +82,63 @@
 }
 
 @layer components {
+  /* Painel de vidro base: blur pronunciado + saturação + realce superior
+     que simula luz refratando na borda do vidro. */
+  .cf-glass {
+    @apply relative rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150;
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.02),
+      0 24px 48px -16px hsl(260 60% 4% / 0.65);
+  }
+
   .cf-card {
-    @apply rounded-2xl border border-border bg-surface/70 backdrop-blur-sm;
+    @apply cf-glass p-5;
   }
+
   .cf-input {
-    @apply w-full rounded-xl border border-border bg-background/60 px-10 py-3 text-foreground
-      placeholder:text-muted focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors;
+    @apply w-full rounded-2xl border border-white/10 bg-white/[0.03] px-10 py-3 text-foreground
+      placeholder:text-muted backdrop-blur-sm transition-all
+      focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/25;
   }
+
   .cf-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-medium text-primary-foreground
-      transition-all hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-4 py-3
+      font-heading font-semibold text-primary-foreground transition-all
+      hover:brightness-110 hover:shadow-neon focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)));
   }
 }
 
 @layer utilities {
+  .font-heading {
+    font-family: var(--font-heading), var(--font-geist-sans), system-ui, sans-serif;
+  }
   .text-gradient {
     background-image: linear-gradient(
-      to right,
+      100deg,
       hsl(var(--primary)),
-      hsl(var(--accent)),
-      hsl(var(--primary))
+      hsl(var(--accent)) 45%,
+      hsl(var(--accent-2))
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .shadow-neon {
-    box-shadow: 0 0 24px hsl(var(--primary) / 0.25);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3), 0 8px 32px -4px hsl(var(--primary) / 0.45), 0 0 40px -8px
+      hsl(var(--accent-2) / 0.35);
+  }
+  .cf-glow-ring {
+    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.25), 0 0 24px hsl(var(--accent) / 0.2);
   }
   .animate-fade-in {
-    animation: fadeIn 0.4s ease-out;
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(6px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;

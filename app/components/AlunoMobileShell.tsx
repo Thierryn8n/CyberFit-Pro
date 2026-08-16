@@ -24,14 +24,14 @@ export default function AlunoMobileShell({ children }: { children: React.ReactNo
     // Fundo neutro fora do "telefone"; container central limita a largura para
     // manter a experiencia mobile mesmo quando aberto no desktop.
     <div className="flex min-h-screen justify-center bg-black/40">
-      <div className="relative flex min-h-screen w-full max-w-md flex-col bg-background shadow-2xl shadow-black/50">
+      <div className="relative flex min-h-screen w-full max-w-md flex-col shadow-2xl shadow-black/50">
         {/* Conteudo rolavel; padding-bottom reserva espaco para a nav fixa */}
         <main className="flex-1 overflow-x-hidden pb-24">{children}</main>
 
         {/* Bottom navigation */}
         <nav
           aria-label="Navegação principal"
-          className="fixed bottom-0 z-40 w-full max-w-md border-t border-border bg-surface/95 backdrop-blur"
+          className="fixed bottom-0 z-40 w-full max-w-md border-t border-white/10 bg-white/[0.06] backdrop-blur-2xl backdrop-saturate-150"
         >
           <ul className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
             {TABS.map((tab) => {

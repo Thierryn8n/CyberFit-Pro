@@ -121,9 +121,9 @@ export default function CadastroPage() {
                 setRole(p.role)
                 setError(null)
               }}
-              className="flex w-full items-center gap-4 rounded-xl border border-border bg-background/50 p-4 text-left transition-all hover:border-primary/50 hover:bg-surface-2"
+              className="flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left backdrop-blur-sm transition-all hover:border-primary/50 hover:bg-white/[0.07]"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-accent-2/25 text-primary">
                 <p.icon size={22} weight="duotone" />
               </div>
               <div>
