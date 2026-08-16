@@ -6,6 +6,7 @@ import { Spinner } from "@phosphor-icons/react"
 
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { useTheme, type Theme } from "./ThemeProvider"
+import { isOnboardingDoneLocal, markOnboardingDone } from "../lib/onboarding"
 
 // Garante que o aluno passe pela triagem antes de usar o app. Também aplica a
 // preferência de tema salva no perfil quando disponível.
@@ -31,16 +32,27 @@ export default function OnboardingGate({ children }: { children: React.ReactNode
           router.replace("/login")
           return
         }
+
+        // Aplica tema do perfil (se houver) sem sobrepor escolha manual local
+        const { data: prof } = await supabase.from("profiles").select("theme_preference").eq("id", user.id).maybeSingle()
+        if (prof?.theme_preference && !localStorage.getItem("cf-theme")) {
+          setTheme(prof.theme_preference as Theme)
+        }
+
+        // Já concluiu localmente? Libera direto, sem reexibir a triagem.
+        if (isOnboardingDoneLocal(user.id)) {
+          return
+        }
+
         const { data, error } = await supabase
           .from("alunos")
           .select("onboarding_completed")
           .eq("id", user.id)
           .maybeSingle()
 
-        // Aplica tema do perfil (se houver) sem sobrepor escolha manual local
-        const { data: prof } = await supabase.from("profiles").select("theme_preference").eq("id", user.id).maybeSingle()
-        if (prof?.theme_preference && !localStorage.getItem("cf-theme")) {
-          setTheme(prof.theme_preference as Theme)
+        // Confirmou no banco: memoriza localmente para não checar de novo.
+        if (!error && data?.onboarding_completed) {
+          markOnboardingDone(user.id)
         }
 
         // Se a coluna ainda não existe (migration não rodou), não bloqueia.

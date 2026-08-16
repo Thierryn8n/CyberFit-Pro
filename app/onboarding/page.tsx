@@ -16,6 +16,7 @@ import {
 
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { useTheme, type Theme } from "../components/ThemeProvider"
+import { markOnboardingDone, isOnboardingDoneLocal } from "../lib/onboarding"
 
 type Gender = "masculino" | "feminino" | "outro"
 
@@ -82,8 +83,14 @@ export default function OnboardingPage() {
           router.replace("/login")
           return
         }
+        // Já concluiu localmente? Não repete a triagem.
+        if (isOnboardingDoneLocal(user.id)) {
+          router.replace("/aluno")
+          return
+        }
         const { data } = await supabase.from("alunos").select("onboarding_completed").eq("id", user.id).maybeSingle()
         if (data?.onboarding_completed) {
+          markOnboardingDone(user.id)
           router.replace("/aluno")
           return
         }
@@ -135,28 +142,37 @@ export default function OnboardingPage() {
         return
       }
 
+      // upsert garante que a linha seja gravada mesmo que ainda não exista,
+      // evitando que o update atinja 0 linhas e a triagem reapareça.
       const { error: alunoErr } = await supabase
         .from("alunos")
-        .update({
-          gender: (form.gender || null) as Gender | null,
-          birth_date: form.birthDate || null,
-          weight_kg: num(form.weight),
-          height_cm: num(form.height),
-          waist_cm: num(form.waist),
-          hip_cm: num(form.hip),
-          arm_cm: num(form.arm),
-          thigh_cm: num(form.thigh),
-          chest_cm: num(form.chest),
-          goal: form.goal || null,
-          activity_level: form.level || null,
-          onboarding_completed: true,
-        })
-        .eq("id", user.id)
+        .upsert(
+          {
+            id: user.id,
+            gender: (form.gender || null) as Gender | null,
+            birth_date: form.birthDate || null,
+            weight_kg: num(form.weight),
+            height_cm: num(form.height),
+            waist_cm: num(form.waist),
+            hip_cm: num(form.hip),
+            arm_cm: num(form.arm),
+            thigh_cm: num(form.thigh),
+            chest_cm: num(form.chest),
+            goal: form.goal || null,
+            activity_level: form.level || null,
+            onboarding_completed: true,
+          },
+          { onConflict: "id" },
+        )
 
       if (alunoErr) throw alunoErr
 
       // Preferência de tema no perfil (não bloqueia se falhar)
       await supabase.from("profiles").update({ theme_preference: form.theme }).eq("id", user.id)
+
+      // Flag local: garante que a triagem não reapareça mesmo se a leitura
+      // do banco atrasar ou falhar numa próxima navegação.
+      markOnboardingDone(user.id)
 
       router.replace("/aluno")
     } catch (err) {
