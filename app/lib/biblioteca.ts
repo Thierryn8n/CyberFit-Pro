@@ -5,7 +5,7 @@
 export const EXERCISES_CDN = "https://cdn.jsdelivr.net/gh/Thierryn8n/exercises-dataset@main"
 export const EXERCISES_JSON_URL = `${EXERCISES_CDN}/data/exercises.json`
 
-export type Idioma = "en" | "es" | "it" | "tr" | "ru" | "zh" | "hi" | "pl" | "ko" | "fr"
+export type Idioma = "pt" | "en" | "es" | "it" | "tr" | "ru" | "zh" | "hi" | "pl" | "ko" | "fr"
 
 // Registro cru vindo do dataset
 export interface RawExercise {
@@ -128,6 +128,7 @@ export const MUSCULO_PT: Record<string, string> = {
 }
 
 const IDIOMA_LABEL: Record<Idioma, string> = {
+  pt: "Português",
   en: "Inglês",
   es: "Espanhol",
   it: "Italiano",
@@ -190,4 +191,100 @@ export async function fetchExercicio(id: string): Promise<ExercicioFull> {
   const res = await fetch(`/api/biblioteca/${id}/`)
   if (!res.ok) throw new Error("Exercício não encontrado")
   return res.json()
+}
+
+// Busca o exercicio COMPLETO a partir do nome (fallback quando o exercicio
+// salvo no treino nao tem biblioteca_id). Retorna null se nao encontrar.
+export async function fetchExercicioPorNome(name: string): Promise<ExercicioFull | null> {
+  const alvo = name.trim().toLowerCase()
+  if (!alvo) return null
+  try {
+    const res = await fetchBiblioteca({ q: name, pageSize: 8 })
+    const match = res.items.find((i) => i.name.trim().toLowerCase() === alvo) ?? res.items[0]
+    if (!match) return null
+    return await fetchExercicio(match.id)
+  } catch {
+    return null
+  }
+}
+
+// Ordem de preferencia de idioma para exibir as instrucoes ao aluno:
+// portugues primeiro, depois espanhol/ingles e por fim o que houver.
+export const IDIOMA_PREFERENCIA: Idioma[] = ["pt", "es", "en", "it", "fr", "ru", "tr", "pl", "ko", "zh", "hi"]
+
+export interface InstrucaoResolvida {
+  lang: Idioma | null
+  steps: string[]
+  text: string
+}
+
+// Escolhe a melhor instrucao disponivel (passos numerados de preferencia),
+// respeitando a ordem de preferencia de idioma.
+export function resolverInstrucao(ex: Pick<ExercicioFull, "instructions" | "instruction_steps">): InstrucaoResolvida {
+  const stepsMap = ex.instruction_steps ?? {}
+  const textMap = ex.instructions ?? {}
+  for (const l of IDIOMA_PREFERENCIA) {
+    const s = stepsMap[l]
+    if (s && s.length > 0) return { lang: l, steps: s, text: textMap[l] ?? "" }
+  }
+  for (const l of IDIOMA_PREFERENCIA) {
+    const t = textMap[l]
+    if (t) return { lang: l, steps: [], text: t }
+  }
+  return { lang: null, steps: [], text: "" }
+}
+
+// ---------------------------------------------------------------------------
+// Recuperacao de midia a partir da biblioteca (fallback do painel do aluno)
+// ---------------------------------------------------------------------------
+// Quando um exercicio salvo nao tem gif/imagem no banco (colunas ausentes ou
+// treino gravado sem midia), recuperamos a midia da biblioteca usando o
+// biblioteca_id e, em ultimo caso, o proprio nome do exercicio.
+
+export interface MidiaExercicio {
+  gif: string
+  image: string
+  target: string
+  equipment: string
+  instructions: string
+}
+
+function primeiraInstrucao(ex: ExercicioFull): string {
+  const i = ex.instructions ?? {}
+  const texto = i.en ?? i.es ?? Object.values(i)[0] ?? ""
+  return texto || ""
+}
+
+export async function midiaPorBibliotecaId(id: string): Promise<MidiaExercicio | null> {
+  try {
+    const ex = await fetchExercicio(id)
+    return {
+      gif: ex.gif || "",
+      image: ex.image || "",
+      target: ex.target || "",
+      equipment: ex.equipment || "",
+      instructions: primeiraInstrucao(ex),
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function midiaPorNome(name: string): Promise<MidiaExercicio | null> {
+  const alvo = name.trim().toLowerCase()
+  if (!alvo) return null
+  try {
+    const res = await fetchBiblioteca({ q: name, pageSize: 8 })
+    const match = res.items.find((i) => i.name.trim().toLowerCase() === alvo) ?? res.items[0]
+    if (!match) return null
+    return {
+      gif: match.gif || "",
+      image: match.image || "",
+      target: match.target || "",
+      equipment: match.equipment || "",
+      instructions: "",
+    }
+  } catch {
+    return null
+  }
 }

@@ -76,16 +76,31 @@ export default function TreinosPage() {
   const load = async () => {
     if (!profile) return
     const supabase = createClient()
-    const [{ data: treinos }, { data: als }] = await Promise.all([
+
+    // SELECT resiliente: se gif_url ainda nao existir no banco, faz fallback
+    // sem a coluna de midia para os treinos nao desaparecerem da lista.
+    const selTreinos = (exCols: string) =>
       supabase
         .from("treinos")
         .select(
-          "id, name, description, status, day_of_week, alunos(profiles(full_name)), exercicios(id, name, sets, reps, gif_url, order_index)",
+          `id, name, description, status, day_of_week, alunos(profiles(full_name)), exercicios(${exCols})`,
         )
         .eq("instrutor_id", profile.id)
-        .order("created_at", { ascending: false }),
-      supabase.from("alunos").select("id, gender, profiles(full_name)").eq("instrutor_id", profile.id),
-    ])
+        .order("created_at", { ascending: false })
+
+    let treinos: unknown = null
+    const rFull = await selTreinos("id, name, sets, reps, gif_url, biblioteca_id, order_index")
+    if (!rFull.error) treinos = rFull.data
+    else {
+      const rMin = await selTreinos("id, name, sets, reps, order_index")
+      treinos = rMin.data
+    }
+
+    const { data: als } = await supabase
+      .from("alunos")
+      .select("id, gender, profiles(full_name)")
+      .eq("instrutor_id", profile.id)
+
     setRows((treinos as unknown as TreinoRow[]) ?? [])
     setAlunos((als as unknown as AlunoOption[]) ?? [])
     setLoading(false)

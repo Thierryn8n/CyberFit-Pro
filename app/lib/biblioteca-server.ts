@@ -1,41 +1,80 @@
 import "server-only"
 
-import { EXERCISES_JSON_URL, mediaUrl, type RawExercise, type ExercicioLite, type ExercicioFull } from "./biblioteca"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
-// Cache em memoria do modulo (sobrevive entre requisicoes na mesma instancia).
-// Guardamos numa global para nao recarregar 17MB a cada HMR em dev.
-interface Cache {
-  raw: RawExercise[]
-  byId: Map<string, RawExercise>
-  loadedAt: number
+import { mediaUrl, type RawExercise, type ExercicioLite, type ExercicioFull } from "./biblioteca"
+
+// A biblioteca de exercicios agora vive na tabela public.biblioteca_exercicios
+// (populada a partir do dataset do GitHub). Lemos direto do banco em vez de
+// baixar os ~23MB do CDN a cada instancia do servidor.
+
+// Linha crua vinda do banco
+interface BibliotecaRow {
+  id: string
+  name: string
+  name_pt?: string | null
+  category: string | null
+  body_part: string | null
+  equipment: string | null
+  target: string | null
+  muscle_group: string | null
+  secondary_muscles: string[] | null
+  gif_url: string | null
+  image_url: string | null
+  media_id: string | null
+  instructions: Record<string, string> | null
+  instruction_steps: Record<string, string[]> | null
+  instructions_pt: string | null
+  instruction_steps_pt: string[] | null
+  attribution: string | null
 }
 
-const g = globalThis as unknown as { __cf_biblioteca?: Cache; __cf_loading?: Promise<Cache> }
+const g = globalThis as unknown as { __cf_sb?: SupabaseClient }
 
-async function loadDataset(): Promise<Cache> {
-  // "no-store": o dataset tem ~23MB e estoura o limite de 2MB do Data Cache do Next.
-  // O cache em memoria (globalThis) abaixo garante que o download ocorra uma unica vez
-  // por instancia do servidor, entao nao ha refetch a cada requisicao.
-  const res = await fetch(EXERCISES_JSON_URL, { cache: "no-store" })
-  if (!res.ok) throw new Error(`Falha ao baixar o dataset (${res.status})`)
-  const raw = (await res.json()) as RawExercise[]
-  const byId = new Map<string, RawExercise>()
-  for (const ex of raw) byId.set(ex.id, ex)
-  return { raw, byId, loadedAt: Date.now() }
+function sb(): SupabaseClient {
+  if (g.__cf_sb) return g.__cf_sb
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  // Usamos a chave anon: a policy de leitura publica na tabela permite SELECT.
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  g.__cf_sb = createClient(url, key, { auth: { persistSession: false } })
+  return g.__cf_sb
 }
 
-export async function getDataset(): Promise<Cache> {
-  if (g.__cf_biblioteca) return g.__cf_biblioteca
-  if (!g.__cf_loading) {
-    g.__cf_loading = loadDataset().then((c) => {
-      g.__cf_biblioteca = c
-      g.__cf_loading = undefined
-      return c
-    })
+// As URLs de gif/imagem ja estao completas no banco; mediaUrl e idempotente
+// para URLs absolutas, entao mantemos por seguranca.
+function rowToLite(r: BibliotecaRow): ExercicioLite {
+  return {
+    id: r.id,
+    // Preferimos o nome em portugues; caimos para o ingles quando ainda nao traduzido.
+    name: r.name_pt?.trim() || r.name,
+    category: r.category ?? "",
+    body_part: r.body_part ?? "",
+    equipment: r.equipment ?? "",
+    target: r.target ?? "",
+    secondary_muscles: r.secondary_muscles ?? [],
+    image: r.image_url ? mediaUrl(r.image_url) : "",
+    gif: r.gif_url ? mediaUrl(r.gif_url) : "",
   }
-  return g.__cf_loading
 }
 
+function rowToFull(r: BibliotecaRow): ExercicioFull {
+  // Injeta a traducao pt-BR (colunas dedicadas) nos mapas de instrucao para
+  // que a UI possa selecionar o idioma "pt" como qualquer outro.
+  const instructions = { ...(r.instructions ?? {}) }
+  const instruction_steps = { ...(r.instruction_steps ?? {}) }
+  if (r.instructions_pt && r.instructions_pt.trim()) instructions.pt = r.instructions_pt
+  if (r.instruction_steps_pt && r.instruction_steps_pt.length > 0) instruction_steps.pt = r.instruction_steps_pt
+
+  return {
+    ...rowToLite(r),
+    muscle_group: r.muscle_group ?? "",
+    instructions,
+    instruction_steps,
+    attribution: r.attribution ?? "© Gym visual — https://gymvisual.com/",
+  }
+}
+
+// Mantidos para compatibilidade com codigo que ainda importe estes helpers.
 export function toLite(ex: RawExercise): ExercicioLite {
   return {
     id: ex.id,
@@ -60,6 +99,13 @@ export function toFull(ex: RawExercise): ExercicioFull {
   }
 }
 
+export async function getExercicioById(id: string): Promise<ExercicioFull | null> {
+  const { data, error } = await sb().from("biblioteca_exercicios").select("*").eq("id", id).maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) return null
+  return rowToFull(data as BibliotecaRow)
+}
+
 export interface QueryOpts {
   q?: string
   category?: string
@@ -69,36 +115,46 @@ export interface QueryOpts {
 }
 
 export async function queryBiblioteca(opts: QueryOpts) {
-  const { raw } = await getDataset()
+  const client = sb()
+  const q = opts.q?.trim()
 
-  const q = opts.q?.trim().toLowerCase()
-  let filtered = raw
-  if (opts.category) filtered = filtered.filter((e) => e.category === opts.category)
-  if (opts.equipment) filtered = filtered.filter((e) => e.equipment === opts.equipment)
+  // Consulta paginada + filtros
+  let query = client.from("biblioteca_exercicios").select("*", { count: "exact" })
+  if (opts.category) query = query.eq("category", opts.category)
+  if (opts.equipment) query = query.eq("equipment", opts.equipment)
   if (q) {
-    filtered = filtered.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        (e.target ?? "").toLowerCase().includes(q) ||
-        (e.muscle_group ?? "").toLowerCase().includes(q),
-    )
+    const like = `%${q}%`
+    query = query.or(`name.ilike.${like},target.ilike.${like},muscle_group.ilike.${like}`)
   }
 
-  // Facetas calculadas sobre o dataset completo (contagem por categoria/equipamento)
-  const catCount = new Map<string, number>()
-  const equipCount = new Map<string, number>()
-  for (const e of raw) {
-    catCount.set(e.category, (catCount.get(e.category) ?? 0) + 1)
-    equipCount.set(e.equipment, (equipCount.get(e.equipment) ?? 0) + 1)
-  }
-
-  const total = filtered.length
   const start = (opts.page - 1) * opts.pageSize
-  const items = filtered.slice(start, start + opts.pageSize).map(toLite)
+  query = query.order("id", { ascending: true }).range(start, start + opts.pageSize - 1)
+
+  const { data, error, count } = await query
+  if (error) throw new Error(error.message)
+
+  const items = (data as BibliotecaRow[]).map(rowToLite)
+
+  // Facetas: contagem por categoria e equipamento sobre a tabela inteira.
+  const [{ data: catRows }, { data: equipRows }] = await Promise.all([
+    client.from("biblioteca_exercicios").select("category"),
+    client.from("biblioteca_exercicios").select("equipment"),
+  ])
+
+  const catCount = new Map<string, number>()
+  for (const row of (catRows as { category: string | null }[]) ?? []) {
+    const c = row.category ?? ""
+    if (c) catCount.set(c, (catCount.get(c) ?? 0) + 1)
+  }
+  const equipCount = new Map<string, number>()
+  for (const row of (equipRows as { equipment: string | null }[]) ?? []) {
+    const e = row.equipment ?? ""
+    if (e) equipCount.set(e, (equipCount.get(e) ?? 0) + 1)
+  }
 
   return {
     items,
-    total,
+    total: count ?? items.length,
     page: opts.page,
     pageSize: opts.pageSize,
     catCount,

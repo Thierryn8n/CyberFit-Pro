@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Rotas publicas (nao exigem login)
-const PUBLIC_PATHS = ["/", "/login", "/cadastro", "/recuperar-senha", "/reset-password", "/auth", "/api/biblioteca"]
+const PUBLIC_PATHS = ["/", "/login", "/cadastro", "/recuperar-senha", "/reset-password", "/auth", "/api/biblioteca", "/api/admin"]
 
 // Prefixo de rota permitido para cada papel
 const ROLE_HOME: Record<string, string> = {
