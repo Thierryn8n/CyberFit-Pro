@@ -2,10 +2,34 @@
 
 import type React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { House, Barbell, ChartLineUp, User } from "@phosphor-icons/react"
+import { usePathname, useRouter } from "next/navigation"
+import {
+  House,
+  Barbell,
+  ChartLineUp,
+  User,
+  BookOpenText,
+  Calendar,
+  ClockCounterClockwise,
+  SignOut,
+  type Icon,
+} from "@phosphor-icons/react"
 
-const TABS = [
+import { signOut } from "../lib/auth"
+import { useUserProfile } from "../hooks/useUserProfile"
+import ThemeToggle from "./ThemeToggle"
+
+interface Tab {
+  name: string
+  icon: Icon
+  path: string
+}
+
+// Navegacao principal do aluno no celular. Quatro abas cobrem o fluxo diario;
+// Biblioteca, Agenda e Histórico ficam na barra superior flutuante — mesmo
+// padrão visual usado no InstrutorMobileShell (cf-card flutuante + nav
+// inferior com destaque em gradiente no item ativo).
+const TABS: Tab[] = [
   { name: "Início", icon: House, path: "/aluno" },
   { name: "Treinos", icon: Barbell, path: "/aluno/treinos" },
   { name: "Progresso", icon: ChartLineUp, path: "/aluno/progresso" },
@@ -13,48 +37,107 @@ const TABS = [
 ]
 
 function isActive(pathname: string, path: string) {
-  if (path === "/aluno") return pathname === "/aluno"
-  return pathname === path || pathname.startsWith(`${path}/`)
+  const clean = pathname.replace(/\/+$/, "") || "/"
+  if (path === "/aluno") return clean === "/aluno"
+  return clean === path || clean.startsWith(`${path}/`)
 }
 
 export default function AlunoMobileShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { profile } = useUserProfile()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/login")
+  }
+
+  const nome = profile?.academiaName || "CyberFit Pro"
 
   return (
-    // Fundo neutro fora do "telefone"; container central limita a largura para
-    // manter a experiencia mobile mesmo quando aberto no desktop.
-    <div className="flex min-h-screen justify-center bg-surface-2">
-      <div className="relative flex min-h-screen w-full max-w-md flex-col shadow-2xl shadow-black/10">
-        {/* Conteudo rolavel; padding-bottom reserva espaco para a nav fixa */}
-        <main className="flex-1 overflow-x-hidden pb-24">{children}</main>
+    // Enquadramento mobile: container central de largura de celular mesmo
+    // no desktop, espelhando o InstrutorMobileShell.
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-4">
+      {/* Barra superior flutuante e arredondada */}
+      <header className="cf-card sticky top-4 z-30 flex items-center justify-between gap-3 !rounded-3xl !p-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div
+            className="cf-emboss flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+            style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }}
+          >
+            <Barbell size={20} weight="duotone" className="text-primary-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-heading text-sm font-semibold leading-tight text-foreground">{nome}</p>
+            <p className="text-[11px] text-muted">Painel do aluno</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <ThemeToggle className="!h-9 !w-9 !rounded-xl border border-border" />
+          <Link
+            href="/aluno/biblioteca"
+            aria-label="Biblioteca"
+            className="cf-inset flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface-2 text-foreground transition-colors hover:text-primary"
+          >
+            <BookOpenText size={18} weight="duotone" />
+          </Link>
+          <Link
+            href="/aluno/agenda"
+            aria-label="Agenda"
+            className="cf-inset flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface-2 text-foreground transition-colors hover:text-primary"
+          >
+            <Calendar size={18} weight="duotone" />
+          </Link>
+          <Link
+            href="/aluno/historico"
+            aria-label="Histórico"
+            className="cf-inset flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface-2 text-foreground transition-colors hover:text-primary"
+          >
+            <ClockCounterClockwise size={18} weight="duotone" />
+          </Link>
+          <button
+            onClick={handleSignOut}
+            aria-label="Sair"
+            className="cf-inset flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface-2 text-danger transition-colors hover:brightness-110"
+          >
+            <SignOut size={18} weight="duotone" />
+          </button>
+        </div>
+      </header>
 
-        {/* Bottom navigation */}
-        <nav
-          aria-label="Navegação principal"
-          className="fixed bottom-0 z-40 w-full max-w-md border-t border-border bg-surface-2 backdrop-blur-2xl backdrop-saturate-150"
-        >
-          <ul className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
-            {TABS.map((tab) => {
-              const active = isActive(pathname, tab.path)
-              const Icon = tab.icon
-              return (
-                <li key={tab.path} className="flex-1">
-                  <Link
-                    href={tab.path}
-                    className={`flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors ${
-                      active ? "text-primary" : "text-muted hover:text-foreground"
-                    }`}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    <Icon size={24} weight={active ? "fill" : "regular"} />
-                    {tab.name}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-      </div>
+      {/* Conteudo */}
+      <main className="flex-1 pt-5">{children}</main>
+
+      {/* Navegacao inferior flutuante e arredondada */}
+      <nav
+        aria-label="Navegação principal"
+        className="fixed inset-x-0 bottom-4 z-40 mx-auto w-[calc(100%-2rem)] max-w-md px-0"
+      >
+        <div className="cf-card flex items-center justify-around gap-1 !rounded-3xl !p-2">
+          {TABS.map((tab) => {
+            const active = isActive(pathname, tab.path)
+            const Icon = tab.icon
+            return (
+              <Link
+                key={tab.path}
+                href={tab.path}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition-all ${
+                  active ? "cf-emboss text-primary-foreground" : "text-muted hover:text-foreground"
+                }`}
+                style={
+                  active
+                    ? { backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-2)))" }
+                    : undefined
+                }
+              >
+                <Icon size={22} weight={active ? "fill" : "regular"} />
+                <span className="leading-none">{tab.name}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }
